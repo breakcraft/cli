@@ -51,20 +51,49 @@ func EnableRepoOverride(cmd *cobra.Command, f *Factory) {
 		if err := executeParentHooks(cmd, args); err != nil {
 			return err
 		}
-		repoOverride, _ := cmd.Flags().GetString("repo")
-		f.BaseRepo = OverrideBaseRepoFunc(f, repoOverride)
+
+		// First, get the value of the flag.
+		// We can ignore errors here because the flag is guaranteed to exist and be string.
+		userProvidedRepo, _ := cmd.Flags().GetString("repo")
+		if userProvidedRepo == "" {
+			// If there was no flag set, then check the GH_REPO environment variable,
+			// which has lower precedence.
+			repoOverride, ok := os.LookupEnv("GH_REPO")
+			// If the envrionment variable was set, then set the value of the `repo` flag,
+			// this ensures that checks for `HasChanged` work correctly. It's a bit "spooky"
+			// action at a distance because the flag will not have been set by the user,
+			// but perhaps it makes sense?
+			//
+			// The reason we need this is because there are `secret` commands that need to know whether
+			// the user set the repo, and the alternative is them having knowledge of the flag and env var,
+			// or by adjusting all our types so that the "source" of the BaseRepo is surfaced, which is a
+			// pretty big change.
+			if ok {
+				// TODO: comment why we ignore error
+				_ = cmd.Flags().Set("repo", repoOverride)
+			}
+		}
+
+		// If the user provided the repo from either source, then we can return that
+		// directly inside a new BaseRepo function.
+		if userProvidedRepo != "" {
+			f.BaseRepo = func() (ghrepo.Interface, error) {
+				return ghrepo.FromFullName(userProvidedRepo)
+			}
+		}
+
 		return nil
 	}
 }
 
-func OverrideBaseRepoFunc(f *Factory, override string) func() (ghrepo.Interface, error) {
-	if override == "" {
-		override = os.Getenv("GH_REPO")
-	}
-	if override != "" {
-		return func() (ghrepo.Interface, error) {
-			return ghrepo.FromFullName(override)
+type baseRepoFn func() (ghrepo.Interface, error)
+
+func PrioritiseEnvBaseRepoFunc(baseRepo baseRepoFn) func() (ghrepo.Interface, error) {
+	return func() (ghrepo.Interface, error) {
+		repo := os.Getenv("GH_REPO")
+		if repo == "" {
+			return baseRepo()
 		}
+		return ghrepo.FromFullName(repo)
 	}
-	return f.BaseRepo
 }
