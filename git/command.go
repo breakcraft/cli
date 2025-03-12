@@ -43,11 +43,17 @@ func (gc *Command) Output() ([]byte, error) {
 	out, err := run.PrepareCmd(gc.Cmd).Output()
 	if err != nil {
 		ge := GitError{err: err}
-		var exitError *exec.ExitError
-		if errors.As(err, &exitError) {
-			ge.Stderr = string(exitError.Stderr)
-			ge.ExitCode = exitError.ExitCode()
+		var runErr *run.CmdError
+		if errors.As(err, &runErr) {
+			ge.Stderr = runErr.Stderr.String()
+			ge.ExitCode = runErr.ExitCode
 		}
+
+		// var exitError *exec.ExitError
+		// if errors.As(err, &exitError) {
+		// 	ge.Stderr = string(exitError.Stderr)
+		// 	ge.ExitCode = exitError.ExitCode()
+		// }
 		err = &ge
 	}
 	return out, err

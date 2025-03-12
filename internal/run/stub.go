@@ -1,6 +1,7 @@
 package run
 
 import (
+	"bytes"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -124,10 +125,17 @@ func (s *commandStub) Run() error {
 	if s.exitStatus != 0 {
 		// It's nontrivial to construct a fake `exec.ExitError` instance, so we return an error type
 		// that has the `ExitCode() int` method.
-		return errWithExitCode{
-			message:  fmt.Sprintf("%s exited with status %d", s.pattern, s.exitStatus),
-			exitCode: s.exitStatus,
+		return CmdError{
+			Args:     []string{},
+			Err:      nil,
+			Stderr:   bytes.NewBuffer([]byte("exploded")),
+			ExitCode: s.exitStatus,
 		}
+
+		// return errWithExitCode{
+		// 	message:  fmt.Sprintf("%s exited with status %d", s.pattern, s.exitStatus),
+		// 	exitCode: s.exitStatus,
+		// }
 	}
 	return nil
 }

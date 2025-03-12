@@ -173,7 +173,7 @@ func TestClientRemotes_no_resolved_remote(t *testing.T) {
 		RepoDir: tempDir,
 	}
 	rs, err := client.Remotes(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 4, len(rs))
 	assert.Equal(t, "upstream", rs[0].Name)
 	assert.Equal(t, "github", rs[1].Name)

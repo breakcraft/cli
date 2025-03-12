@@ -35,20 +35,25 @@ func (c cmdWithStderr) Output() ([]byte, error) {
 		_ = printArgs(os.Stderr, c.Cmd.Args)
 	}
 	out, err := c.Cmd.Output()
-	if c.Cmd.Stderr != nil || err == nil {
-		return out, err
+	if err == nil {
+		return out, nil
 	}
+	// if c.Cmd.Stderr != nil {
+	// 	return out, err
+	// }
 	cmdErr := &CmdError{
 		Args: c.Cmd.Args,
 		Err:  err,
 	}
 	var exitError *exec.ExitError
 	if errors.As(err, &exitError) {
+		cmdErr.ExitCode = exitError.ExitCode()
 		cmdErr.Stderr = bytes.NewBuffer(exitError.Stderr)
 	}
 	return out, cmdErr
 }
 
+// ????????? NO IDEA
 func (c cmdWithStderr) Run() error {
 	if isVerbose, _ := utils.IsDebugEnabled(); isVerbose {
 		_ = printArgs(os.Stderr, c.Cmd.Args)
@@ -71,9 +76,10 @@ func (c cmdWithStderr) Run() error {
 
 // CmdError provides more visibility into why an exec.Cmd had failed
 type CmdError struct {
-	Args   []string
-	Err    error
-	Stderr *bytes.Buffer
+	Args     []string
+	Err      error
+	ExitCode int
+	Stderr   *bytes.Buffer
 }
 
 func (e CmdError) Error() string {
