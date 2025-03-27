@@ -147,7 +147,22 @@ func FindWorkflow(client *api.Client, repo ghrepo.Interface, workflowSelector st
 }
 
 func GetWorkflow(client *api.Client, repo ghrepo.Interface, workflowID int64) (*Workflow, error) {
-	return getWorkflowByID(client, repo, strconv.FormatInt(workflowID, 10))
+	workflow, err := getWorkflowByID(client, repo, strconv.FormatInt(workflowID, 10))
+	// If the error is an httpError, it is a 404, and we have been given a
+	// workflow ID this is likely requested from a list of runs but the run
+	// originates from an organization or enterprise ruleset workflow.
+	// This means that the workflow resides in another repository, and the user
+	// does not have permissions to view the details of the workflow, and we cannot
+	// look it up directly without receiving a 404. It is nonetheless
+	// in the workflow run list, so to handle this, we set the workflow name
+	// to an empty string.
+	if httpErr, ok := err.(api.HTTPError); ok && httpErr.StatusCode == 404 && workflowID != 0 {
+		return &Workflow{
+			Name: "",
+			ID:   workflowID,
+		}, nil
+	}
+	return workflow, err
 }
 
 func isWorkflowFile(f string) bool {
