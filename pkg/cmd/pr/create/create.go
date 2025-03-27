@@ -76,8 +76,14 @@ type CreateOptions struct {
 // creationRefs is an interface that provides the necessary information for creating a pull request in the API.
 // Upcasting to concrete implementations can provide further context on other operations (forking and pushing).
 type creationRefs interface {
+	// QualifiedHeadRef returns a stringified form of the head ref, varying depending
+	// on whether the head ref is in the same repository as the base ref. If they are
+	// the same repository, we return the branch name only. If they are different repositories,
+	// we return the owner and branch name in the form <owner>:<branch>.
 	QualifiedHeadRef() string
+	// UnqualifiedHeadRef returns a head ref in the form of the branch name only.
 	UnqualifiedHeadRef() string
+	//BaseRef returns the base branch name.
 	BaseRef() string
 
 	// While the only thing really required from an api.Repository is the repository ID, changing that
