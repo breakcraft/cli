@@ -1129,7 +1129,13 @@ func Test_createRun(t *testing.T) {
 					httpmock.StringResponse(`{"data": {"viewer": {"login": "OWNER"} } }`))
 			},
 			cmdStubs: func(cs *run.CommandStubber) {
-				cs.Register(`git( .+)? log( .+)? origin/master\.\.\.feature`, 0, "")
+				// Here we simulate a non-empty git history, and we want to see that the title/body fields are not populated from it, since no fill option is provided.
+				cs.Register(
+					"git -c log.ShowSignature=false log --pretty=format:%H%x00%s%x00%b%x00 --cherry origin/master...feature",
+					0,
+					"56b6f8bb7c9e3a30093cd17e48934ce354148e80\u0000second commit of pr\u0000\u0000\n"+
+						"3a9b48085046d156c5acce8f3b3a0532cd706a4a\u0000first commit of pr\u0000first commit description\u0000\n",
+				)
 				cs.Register("git rev-parse --symbolic-full-name feature@{push}", 0, "refs/remotes/origin/feature")
 				cs.Register(`git show-ref --verify -- HEAD refs/remotes/origin/feature`, 1, "")
 				cs.Register(`git show-ref --verify -- HEAD refs/remotes/origin/feature`, 1, "")
@@ -1146,6 +1152,182 @@ func Test_createRun(t *testing.T) {
 			},
 			expectedErrOut: "Opening https://github.com/OWNER/REPO/compare/master...feature in your browser.\n",
 			expectedBrowse: "https://github.com/OWNER/REPO/compare/master...feature?body=&expand=1",
+		},
+		{
+			name: "web with --fill",
+			setup: func(opts *CreateOptions, t *testing.T) func() {
+				opts.WebMode = true
+				opts.HeadBranch = "feature"
+				opts.Autofill = true
+				return func() {}
+			},
+			cmdStubs: func(cs *run.CommandStubber) {
+				cs.Register(
+					"git -c log.ShowSignature=false log --pretty=format:%H%x00%s%x00%b%x00 --cherry origin/master...feature",
+					0,
+					"56b6f8bb7c9e3a30093cd17e48934ce354148e80\u0000second commit of pr\u0000\u0000\n"+
+						"3a9b48085046d156c5acce8f3b3a0532cd706a4a\u0000first commit of pr\u0000first commit description\u0000\n",
+				)
+			},
+			expectedBrowse: "https://github.com/OWNER/REPO/compare/master...feature?body=-+%2A%2Afirst+commit+of+pr%2A%2A%0A-+%2A%2Asecond+commit+of+pr%2A%2A%0A&expand=1&title=feature",
+		},
+		{
+			name: "web with --fill-first",
+			setup: func(opts *CreateOptions, t *testing.T) func() {
+				opts.WebMode = true
+				opts.HeadBranch = "feature"
+				opts.FillFirst = true
+				return func() {}
+			},
+			cmdStubs: func(cs *run.CommandStubber) {
+				cs.Register(
+					"git -c log.ShowSignature=false log --pretty=format:%H%x00%s%x00%b%x00 --cherry origin/master...feature",
+					0,
+					"56b6f8bb7c9e3a30093cd17e48934ce354148e80\u0000second commit of pr\u0000\u0000\n"+
+						"3a9b48085046d156c5acce8f3b3a0532cd706a4a\u0000first commit of pr\u0000first commit description\u0000\n",
+				)
+			},
+			expectedBrowse: "https://github.com/OWNER/REPO/compare/master...feature?body=first+commit+description&expand=1&title=first+commit+of+pr",
+		},
+		{
+			name: "web with --title",
+			tty:  true,
+			setup: func(opts *CreateOptions, t *testing.T) func() {
+				opts.WebMode = true
+				opts.TitleProvided = true
+				opts.Title = "foo"
+				return func() {}
+			},
+			httpStubs: func(reg *httpmock.Registry, t *testing.T) {
+				reg.StubRepoResponse("OWNER", "REPO")
+				reg.Register(
+					httpmock.GraphQL(`query UserCurrent\b`),
+					httpmock.StringResponse(`{"data": {"viewer": {"login": "OWNER"} } }`))
+			},
+			cmdStubs: func(cs *run.CommandStubber) {
+				// Here we simulate a non-empty git history, and we want to see that the body field is not populated from it, since no fill option is provided.
+				cs.Register(
+					"git -c log.ShowSignature=false log --pretty=format:%H%x00%s%x00%b%x00 --cherry origin/master...feature",
+					0,
+					"56b6f8bb7c9e3a30093cd17e48934ce354148e80\u0000second commit of pr\u0000\u0000\n"+
+						"3a9b48085046d156c5acce8f3b3a0532cd706a4a\u0000first commit of pr\u0000first commit description\u0000\n",
+				)
+				cs.Register("git rev-parse --symbolic-full-name feature@{push}", 0, "refs/remotes/origin/feature")
+				cs.Register(`git show-ref --verify -- HEAD refs/remotes/origin/feature`, 1, "")
+				cs.Register(`git show-ref --verify -- HEAD refs/remotes/origin/feature`, 1, "")
+				cs.Register(`git push --set-upstream origin HEAD:refs/heads/feature`, 0, "")
+			},
+			promptStubs: func(pm *prompter.PrompterMock) {
+				pm.SelectFunc = func(p, _ string, opts []string) (int, error) {
+					if p == "Where should we push the 'feature' branch?" {
+						return 0, nil
+					} else {
+						return -1, prompter.NoSuchPromptErr(p)
+					}
+				}
+			},
+			expectedErrOut: "Opening https://github.com/OWNER/REPO/compare/master...feature in your browser.\n",
+			expectedBrowse: "https://github.com/OWNER/REPO/compare/master...feature?body=&expand=1&title=foo",
+		},
+		{
+			name: "web with --body",
+			tty:  true,
+			setup: func(opts *CreateOptions, t *testing.T) func() {
+				opts.WebMode = true
+				opts.BodyProvided = true
+				opts.Body = "foo"
+				return func() {}
+			},
+			httpStubs: func(reg *httpmock.Registry, t *testing.T) {
+				reg.StubRepoResponse("OWNER", "REPO")
+				reg.Register(
+					httpmock.GraphQL(`query UserCurrent\b`),
+					httpmock.StringResponse(`{"data": {"viewer": {"login": "OWNER"} } }`))
+			},
+			cmdStubs: func(cs *run.CommandStubber) {
+				// Here we simulate a non-empty git history, and we want to see that the title field is not populated from it, since no fill option is provided.
+				cs.Register(
+					"git -c log.ShowSignature=false log --pretty=format:%H%x00%s%x00%b%x00 --cherry origin/master...feature",
+					0,
+					"56b6f8bb7c9e3a30093cd17e48934ce354148e80\u0000second commit of pr\u0000\u0000\n"+
+						"3a9b48085046d156c5acce8f3b3a0532cd706a4a\u0000first commit of pr\u0000first commit description\u0000\n",
+				)
+				cs.Register("git rev-parse --symbolic-full-name feature@{push}", 0, "refs/remotes/origin/feature")
+				cs.Register(`git show-ref --verify -- HEAD refs/remotes/origin/feature`, 1, "")
+				cs.Register(`git show-ref --verify -- HEAD refs/remotes/origin/feature`, 1, "")
+				cs.Register(`git push --set-upstream origin HEAD:refs/heads/feature`, 0, "")
+			},
+			promptStubs: func(pm *prompter.PrompterMock) {
+				pm.SelectFunc = func(p, _ string, opts []string) (int, error) {
+					if p == "Where should we push the 'feature' branch?" {
+						return 0, nil
+					} else {
+						return -1, prompter.NoSuchPromptErr(p)
+					}
+				}
+			},
+			expectedErrOut: "Opening https://github.com/OWNER/REPO/compare/master...feature in your browser.\n",
+			expectedBrowse: "https://github.com/OWNER/REPO/compare/master...feature?body=foo&expand=1",
+		},
+		{
+			name: "web with --title and --body",
+			tty:  true,
+			setup: func(opts *CreateOptions, t *testing.T) func() {
+				opts.WebMode = true
+				opts.TitleProvided = true
+				opts.Title = "foo"
+				opts.BodyProvided = true
+				opts.Body = "bar"
+				return func() {}
+			},
+			httpStubs: func(reg *httpmock.Registry, t *testing.T) {
+				reg.StubRepoResponse("OWNER", "REPO")
+				reg.Register(
+					httpmock.GraphQL(`query UserCurrent\b`),
+					httpmock.StringResponse(`{"data": {"viewer": {"login": "OWNER"} } }`))
+			},
+			cmdStubs: func(cs *run.CommandStubber) {
+				// Since both --title and --body options are provided, and also --fill is set, then no git log history
+				// should be used, thus no stub for it.
+				cs.Register("git rev-parse --symbolic-full-name feature@{push}", 0, "refs/remotes/origin/feature")
+				cs.Register(`git show-ref --verify -- HEAD refs/remotes/origin/feature`, 1, "")
+				cs.Register(`git show-ref --verify -- HEAD refs/remotes/origin/feature`, 1, "")
+				cs.Register(`git push --set-upstream origin HEAD:refs/heads/feature`, 0, "")
+			},
+			promptStubs: func(pm *prompter.PrompterMock) {
+				pm.SelectFunc = func(p, _ string, opts []string) (int, error) {
+					if p == "Where should we push the 'feature' branch?" {
+						return 0, nil
+					} else {
+						return -1, prompter.NoSuchPromptErr(p)
+					}
+				}
+			},
+			expectedErrOut: "Opening https://github.com/OWNER/REPO/compare/master...feature in your browser.\n",
+			expectedBrowse: "https://github.com/OWNER/REPO/compare/master...feature?body=bar&expand=1&title=foo",
+		},
+		{
+			name: "web with --title, --body and --fill (#10547)",
+			setup: func(opts *CreateOptions, t *testing.T) func() {
+				opts.WebMode = true
+				opts.HeadBranch = "feature"
+				opts.TitleProvided = true
+				opts.Title = "foo"
+				opts.BodyProvided = true
+				opts.Body = "bar"
+				opts.Autofill = true
+				return func() {}
+			},
+			cmdStubs: func(cs *run.CommandStubber) {
+				// Here we simulate a non-empty git history, and we want to see that the title/body fields are not populated from it, since no fill option is provided.
+				cs.Register(
+					"git -c log.ShowSignature=false log --pretty=format:%H%x00%s%x00%b%x00 --cherry origin/master...feature",
+					0,
+					"56b6f8bb7c9e3a30093cd17e48934ce354148e80\u0000second commit of pr\u0000\u0000\n"+
+						"3a9b48085046d156c5acce8f3b3a0532cd706a4a\u0000first commit of pr\u0000first commit description\u0000\n",
+				)
+			},
+			expectedBrowse: "https://github.com/OWNER/REPO/compare/master...feature?body=bar&expand=1&title=foo",
 		},
 		{
 			name: "web project",
