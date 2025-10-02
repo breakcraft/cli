@@ -85,7 +85,7 @@ type creationRefs interface {
 	QualifiedHeadRef() string
 	// UnqualifiedHeadRef returns a head ref in the form of the branch name only.
 	UnqualifiedHeadRef() string
-	//BaseRef returns the base branch name.
+	// BaseRef returns the base branch name.
 	BaseRef() string
 
 	// While the only thing really required from an api.Repository is the repository ID, changing that
