@@ -1207,15 +1207,28 @@ func handlePush(opts CreateOptions, ctx CreateContext) error {
 		}
 	}
 
+	root := context.Background()
+
+	var hasRemoteTrackingRef bool
+	if ok, err := ctx.GitClient.HasRemoteTrackingRef(root, "HEAD"); err == nil && ok {
+		hasRemoteTrackingRef = true
+	}
+
 	// automatically push the branch if it hasn't been pushed anywhere yet
 	pushBranch := func() error {
 		w := NewRegexpWriter(opts.IO.ErrOut, gitPushRegexp, "")
 		defer w.Flush()
 		ref := fmt.Sprintf("HEAD:refs/heads/%s", ctx.PRRefs.UnqualifiedHeadRef())
 		bo := backoff.NewConstantBackOff(2 * time.Second)
-		root := context.Background()
 		return backoff.Retry(func() error {
-			if err := ctx.GitClient.PushWithTracking(root, headRemote.Name, ref, git.WithStderr(w)); err != nil {
+			var err error
+			if hasRemoteTrackingRef {
+				err = ctx.GitClient.Push(root, headRemote.Name, ref, git.WithStderr(w))
+			} else {
+				err = ctx.GitClient.PushWithTracking(root, headRemote.Name, ref, git.WithStderr(w))
+			}
+
+			if err != nil {
 				// Only retry if we have forked the repo else the push should succeed the first time.
 				if requiresFork {
 					fmt.Fprintf(opts.IO.ErrOut, "waiting 2 seconds before retrying...\n")
