@@ -1215,7 +1215,7 @@ func handlePush(opts CreateOptions, ctx CreateContext) error {
 		bo := backoff.NewConstantBackOff(2 * time.Second)
 		root := context.Background()
 		return backoff.Retry(func() error {
-			if err := ctx.GitClient.Push(root, headRemote.Name, ref, git.WithStderr(w)); err != nil {
+			if err := ctx.GitClient.PushWithTracking(root, headRemote.Name, ref, git.WithStderr(w)); err != nil {
 				// Only retry if we have forked the repo else the push should succeed the first time.
 				if requiresFork {
 					fmt.Fprintf(opts.IO.ErrOut, "waiting 2 seconds before retrying...\n")

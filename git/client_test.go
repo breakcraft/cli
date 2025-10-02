@@ -1773,7 +1773,7 @@ func TestClientPush(t *testing.T) {
 				GitPath:        "path/to/git",
 				commandContext: cmdCtx,
 			}
-			err := client.Push(context.Background(), "origin", "trunk", tt.mods...)
+			err := client.PushWithTracking(context.Background(), "origin", "trunk", tt.mods...)
 			if tt.wantErrorMsg == "" {
 				require.NoError(t, err)
 			} else {

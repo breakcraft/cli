@@ -804,7 +804,7 @@ func (c *Client) Pull(ctx context.Context, remote, branch string, mods ...Comman
 	return cmd.Run()
 }
 
-func (c *Client) Push(ctx context.Context, remote string, ref string, mods ...CommandModifier) error {
+func (c *Client) PushWithTracking(ctx context.Context, remote string, ref string, mods ...CommandModifier) error {
 	args := []string{"push", "--set-upstream", remote, ref}
 	cmd, err := c.AuthenticatedCommand(ctx, AllMatchingCredentialsPattern, args...)
 	if err != nil {
