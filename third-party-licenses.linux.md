@@ -189,6 +189,8 @@ Some packages may only be included on certain architectures or operating systems
 - [github.com/transparency-dev/merkle](https://pkg.go.dev/github.com/transparency-dev/merkle) ([Apache-2.0](https://github.com/transparency-dev/merkle/blob/v0.0.2/LICENSE))
 - [github.com/transparency-dev/tessera](https://pkg.go.dev/github.com/transparency-dev/tessera) ([Apache-2.0](https://github.com/transparency-dev/tessera/blob/8ee4e93b2823/LICENSE))
 - [github.com/vbatts/tar-split/archive/tar](https://pkg.go.dev/github.com/vbatts/tar-split/archive/tar) ([BSD-3-Clause](https://github.com/vbatts/tar-split/blob/v0.12.1/LICENSE))
+- [github.com/vmihailenco/msgpack/v5](https://pkg.go.dev/github.com/vmihailenco/msgpack/v5) ([BSD-2-Clause](https://github.com/vmihailenco/msgpack/blob/v5.4.1/LICENSE))
+- [github.com/vmihailenco/tagparser/v2](https://pkg.go.dev/github.com/vmihailenco/tagparser/v2) ([BSD-2-Clause](https://github.com/vmihailenco/tagparser/blob/v2.0.0/LICENSE))
 - [github.com/xo/terminfo](https://pkg.go.dev/github.com/xo/terminfo) ([MIT](https://github.com/xo/terminfo/blob/abceb7e1c41e/LICENSE))
 - [github.com/yuin/goldmark](https://pkg.go.dev/github.com/yuin/goldmark) ([MIT](https://github.com/yuin/goldmark/blob/v1.7.13/LICENSE))
 - [github.com/yuin/goldmark-emoji](https://pkg.go.dev/github.com/yuin/goldmark-emoji) ([MIT](https://github.com/yuin/goldmark-emoji/blob/v1.0.6/LICENSE))
