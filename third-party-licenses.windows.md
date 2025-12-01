@@ -194,7 +194,7 @@ Some packages may only be included on certain architectures or operating systems
 - [github.com/stretchr/testify](https://pkg.go.dev/github.com/stretchr/testify) ([MIT](https://github.com/stretchr/testify/blob/v1.11.1/LICENSE))
 - [github.com/subosito/gotenv](https://pkg.go.dev/github.com/subosito/gotenv) ([MIT](https://github.com/subosito/gotenv/blob/v1.6.0/LICENSE))
 - [github.com/theupdateframework/go-tuf](https://pkg.go.dev/github.com/theupdateframework/go-tuf) ([BSD-3-Clause](https://github.com/theupdateframework/go-tuf/blob/v0.7.0/LICENSE))
-- [github.com/theupdateframework/go-tuf/v2/metadata](https://pkg.go.dev/github.com/theupdateframework/go-tuf/v2/metadata) ([Apache-2.0](https://github.com/theupdateframework/go-tuf/blob/v2.2.0/LICENSE))
+- [github.com/theupdateframework/go-tuf/v2/metadata](https://pkg.go.dev/github.com/theupdateframework/go-tuf/v2/metadata) ([Apache-2.0](https://github.com/theupdateframework/go-tuf/blob/v2.3.0/LICENSE))
 - [github.com/thlib/go-timezone-local/tzlocal](https://pkg.go.dev/github.com/thlib/go-timezone-local/tzlocal) ([Unlicense](https://github.com/thlib/go-timezone-local/blob/v0.0.6/LICENSE))
 - [github.com/titanous/rocacheck](https://pkg.go.dev/github.com/titanous/rocacheck) ([MIT](https://github.com/titanous/rocacheck/blob/afe73141d399/LICENSE))
 - [github.com/transparency-dev/formats](https://pkg.go.dev/github.com/transparency-dev/formats) ([Apache-2.0](https://github.com/transparency-dev/formats/blob/bb8ad4d07c26/LICENSE))
