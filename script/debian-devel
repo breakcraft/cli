@@ -458,7 +458,7 @@ teardown() {
   # Kill the HTTP server if it's running
   if pgrep -f "busybox httpd" > /dev/null; then
     header "Stopping the HTTP server..."
-    pkill -f "busybox httpd"
+    sudo pkill -f "busybox httpd"
     echo "Server stopped."
   fi
 
@@ -487,7 +487,7 @@ teardown() {
   # Kill gpg-agent
   if pgrep "^gpg-agent" > /dev/null; then
     header "Stopping the GPG agent..."
-    pkill "^gpg-agent"
+    sudo pkill "^gpg-agent"
     echo "GPG agent stopped."
   fi
 
