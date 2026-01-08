@@ -85,6 +85,10 @@ func downloadCopilot(io *iostreams.IOStreams, installDir, localPath string) (str
 		arch = "x64"
 	}
 
+	if arch != "x64" && arch != "arm64" {
+		return "", fmt.Errorf("unsupported architecture: %s", arch)
+	}
+
 	var url string
 	var isZip bool
 	if platform == "windows" {
