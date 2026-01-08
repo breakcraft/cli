@@ -91,12 +91,13 @@ func downloadCopilot(io *iostreams.IOStreams, installDir, localPath string) (str
 
 	var url string
 	var isZip bool
-	if platform == "windows" {
+	switch platform {
+	case "windows":
 		url = fmt.Sprintf("https://github.com/github/copilot-cli/releases/latest/download/copilot-%s-%s.zip", platform, arch)
 		isZip = true
-	} else if platform == "linux" || platform == "darwin" {
+	case "linux", "darwin":
 		url = fmt.Sprintf("https://github.com/github/copilot-cli/releases/latest/download/copilot-%s-%s.tar.gz", platform, arch)
-	} else {
+	default:
 		return "", fmt.Errorf("unsupported platform: %s", platform)
 	}
 
