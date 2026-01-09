@@ -208,7 +208,7 @@ func extractTarGz(r io.Reader, destDir string) error {
 			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 				return fmt.Errorf("failed to create parent directory: %w", err)
 			}
-			if err := extractTarFile(target, os.FileMode(header.Mode), tr); err != nil {
+			if err := extractTarFile(target, os.FileMode(header.Mode)&0777, tr); err != nil {
 				return err
 			}
 		}
