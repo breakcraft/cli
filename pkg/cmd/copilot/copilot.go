@@ -273,20 +273,20 @@ func extractZip(r io.Reader, destDir string) error {
 
 		out, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, f.Mode())
 		if err != nil {
-			rc.Close()
+			_ = rc.Close()
 			return fmt.Errorf("failed to create file: %w", err)
 		}
 
 		if _, err := io.Copy(out, rc); err != nil {
-			out.Close()
-			rc.Close()
+			_ = out.Close()
+			_ = rc.Close()
 			return fmt.Errorf("failed to write file: %w", err)
 		}
 		if err := out.Close(); err != nil {
-			rc.Close()
+			_ = rc.Close()
 			return fmt.Errorf("failed to close file: %w", err)
 		}
-		rc.Close()
+		_ = rc.Close()
 	}
 	return nil
 }
