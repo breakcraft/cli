@@ -27,12 +27,15 @@ func NewCmdCopilot(f *cmdutil.Factory) *cobra.Command {
 		Short: "Run the GitHub Copilot CLI",
 		Long: heredoc.Docf(`
             Runs the GitHub Copilot CLI.
+            
 
             If already installed, it will use the version found in your PATH.
 
             If not installed, it will be downloaded to %s.
 
             Use --remove to remove the downloaded Copilot CLI.
+
+            Learn more at https://gh.io/copilot-cli
         `, filepath.Join(config.DataDir(), "copilot")),
 		DisableFlagParsing: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
