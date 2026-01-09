@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/cli/cli/v2/internal/config"
@@ -20,6 +21,17 @@ import (
 )
 
 const copilotBinaryName = "copilot"
+
+// sanitizeArchivePath validates that the archive entry path is safe and returns
+// the cleaned target path. It prevents Zip Slip attacks by ensuring the path
+// doesn't escape the destination directory.
+func sanitizeArchivePath(destDir, entryName string) (string, error) {
+	target := filepath.Join(destDir, entryName)
+	if !strings.HasPrefix(filepath.Clean(target), filepath.Clean(destDir)+string(os.PathSeparator)) {
+		return "", fmt.Errorf("illegal file path in archive: %s", entryName)
+	}
+	return target, nil
+}
 
 func NewCmdCopilot(f *cmdutil.Factory) *cobra.Command {
 	cmd := &cobra.Command{
@@ -171,7 +183,10 @@ func extractTarGz(r io.Reader, destDir string) error {
 			return fmt.Errorf("failed to read tar: %w", err)
 		}
 
-		target := filepath.Join(destDir, header.Name)
+		target, err := sanitizeArchivePath(destDir, header.Name)
+		if err != nil {
+			return err
+		}
 
 		switch header.Typeflag {
 		case tar.TypeDir:
@@ -233,7 +248,10 @@ func extractZip(r io.Reader, destDir string) error {
 	defer zipReader.Close()
 
 	for _, f := range zipReader.File {
-		target := filepath.Join(destDir, f.Name)
+		target, err := sanitizeArchivePath(destDir, f.Name)
+		if err != nil {
+			return err
+		}
 
 		if f.FileInfo().IsDir() {
 			if err := os.MkdirAll(target, 0755); err != nil {
