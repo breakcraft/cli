@@ -208,7 +208,7 @@ func extractTarGz(r io.Reader, destDir string) error {
 			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 				return fmt.Errorf("failed to create parent directory: %w", err)
 			}
-			if err := extractTarFile(target, os.FileMode(header.Mode)&0777, tr); err != nil {
+			if err := extractFile(target, os.FileMode(header.Mode)&0777, tr); err != nil {
 				return err
 			}
 		}
@@ -216,7 +216,8 @@ func extractTarGz(r io.Reader, destDir string) error {
 	return nil
 }
 
-func extractTarFile(target string, mode os.FileMode, tr io.Reader) (err error) {
+// extractFile creates a file at target with the given mode and copies content from r.
+func extractFile(target string, mode os.FileMode, r io.Reader) (err error) {
 	out, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
@@ -226,7 +227,7 @@ func extractTarFile(target string, mode os.FileMode, tr io.Reader) (err error) {
 			err = fmt.Errorf("failed to close file: %w", cerr)
 		}
 	}()
-	if _, err := io.Copy(out, tr); err != nil {
+	if _, err := io.Copy(out, r); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 	return nil
@@ -293,7 +294,7 @@ func extractZip(r io.Reader, destDir string) error {
 			return fmt.Errorf("failed to open file in zip: %w", err)
 		}
 
-		if err := extractZipFile(target, f.Mode(), rc); err != nil {
+		if err := extractFile(target, f.Mode(), rc); err != nil {
 			if cerr := rc.Close(); cerr != nil {
 				return fmt.Errorf("failed to close file in zip after error: %v; original error: %w", cerr, err)
 			}
@@ -302,22 +303,6 @@ func extractZip(r io.Reader, destDir string) error {
 		if err := rc.Close(); err != nil {
 			return fmt.Errorf("failed to close file in zip: %w", err)
 		}
-	}
-	return nil
-}
-
-func extractZipFile(target string, mode os.FileMode, rc io.Reader) (err error) {
-	out, err := os.OpenFile(target, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
-	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
-	}
-	defer func() {
-		if cerr := out.Close(); err == nil && cerr != nil {
-			err = fmt.Errorf("failed to close file: %w", cerr)
-		}
-	}()
-	if _, err := io.Copy(out, rc); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
 	}
 	return nil
 }
