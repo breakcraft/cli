@@ -3,7 +3,11 @@ package copilot
 import (
 	"archive/tar"
 	"archive/zip"
+	"bufio"
+	"bytes"
 	"compress/gzip"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -125,26 +129,38 @@ func downloadCopilot(httpClient func() (*http.Client, error), ios *iostreams.IOS
 		return "", fmt.Errorf("unsupported architecture: %s (supported: x64, arm64)", arch)
 	}
 
-	var url string
+	var archiveURL string
+	var archiveName string
 	var isZip bool
 	switch platform {
 	case "windows":
-		url = fmt.Sprintf("https://github.com/github/copilot-cli/releases/latest/download/copilot-%s-%s.zip", platform, arch)
+		archiveName = fmt.Sprintf("copilot-%s-%s.zip", platform, arch)
+		archiveURL = fmt.Sprintf("https://github.com/github/copilot-cli/releases/latest/download/%s", archiveName)
 		isZip = true
 	case "linux", "darwin":
-		url = fmt.Sprintf("https://github.com/github/copilot-cli/releases/latest/download/copilot-%s-%s.tar.gz", platform, arch)
+		archiveName = fmt.Sprintf("copilot-%s-%s.tar.gz", platform, arch)
+		archiveURL = fmt.Sprintf("https://github.com/github/copilot-cli/releases/latest/download/%s", archiveName)
 	default:
 		return "", fmt.Errorf("unsupported platform: %s (supported: linux, darwin, windows)", platform)
 	}
 
-	fmt.Fprintf(ios.ErrOut, "Downloading Copilot CLI from %s\n", url)
+	checksumsURL := "https://github.com/github/copilot-cli/releases/latest/download/SHA256SUMS.txt"
+
+	fmt.Fprintf(ios.ErrOut, "Downloading Copilot CLI from %s\n", archiveURL)
 
 	client, err := httpClient()
 	if err != nil {
 		return "", err
 	}
 
-	resp, err := client.Get(url)
+	// Download checksums file
+	expectedChecksum, err := fetchExpectedChecksum(client, checksumsURL, archiveName)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch checksums: %w", err)
+	}
+
+	// Download the archive
+	resp, err := client.Get(archiveURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to download: %w", err)
 	}
@@ -154,17 +170,30 @@ func downloadCopilot(httpClient func() (*http.Client, error), ios *iostreams.IOS
 		return "", fmt.Errorf("download failed with status: %s", resp.Status)
 	}
 
+	// Read entire body to calculate checksum before extraction
+	archiveData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read download: %w", err)
+	}
+
+	// Validate checksum
+	actualChecksum := sha256.Sum256(archiveData)
+	actualChecksumHex := hex.EncodeToString(actualChecksum[:])
+	if actualChecksumHex != expectedChecksum {
+		return "", fmt.Errorf("checksum mismatch: expected %s, got %s", expectedChecksum, actualChecksumHex)
+	}
+
 	if err := os.MkdirAll(installDir, 0755); err != nil {
 		return "", fmt.Errorf("failed to create install directory: %w", err)
 	}
 
+	// Extract from the downloaded data
+	archiveReader := bytes.NewReader(archiveData)
 	if isZip {
-		err = extractZip(resp.Body, installDir)
+		err = extractZip(archiveReader, installDir)
 	} else {
-		err = extractTarGz(resp.Body, installDir)
+		err = extractTarGz(archiveReader, installDir)
 	}
-	// Drain any remaining body content to ensure HTTP connection reuse
-	_, _ = io.Copy(io.Discard, resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -175,6 +204,39 @@ func downloadCopilot(httpClient func() (*http.Client, error), ios *iostreams.IOS
 
 	fmt.Fprintln(ios.ErrOut, "Copilot CLI installed successfully")
 	return localPath, nil
+}
+
+// fetchExpectedChecksum downloads the SHA256SUMS.txt file and returns the expected checksum for the given archive name.
+func fetchExpectedChecksum(client *http.Client, checksumsURL, archiveName string) (string, error) {
+	resp, err := client.Get(checksumsURL)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to download checksums: %s", resp.Status)
+	}
+
+	// Parse the checksums file (format: "<checksum>  <filename>" or "<checksum> <filename>")
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		// Split on whitespace - format is typically "<hash>  <filename>" (two spaces) or "<hash> <filename>"
+		fields := strings.Fields(line)
+		if len(fields) >= 2 {
+			checksum := fields[0]
+			filename := fields[len(fields)-1]
+			if filename == archiveName {
+				return checksum, nil
+			}
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("failed to read checksums: %w", err)
+	}
+
+	return "", fmt.Errorf("checksum not found for %s", archiveName)
 }
 
 func extractTarGz(r io.Reader, destDir string) error {
