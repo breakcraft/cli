@@ -1,4 +1,4 @@
-package download
+package zip
 
 import (
 	"archive/zip"
@@ -17,7 +17,7 @@ const (
 	execMode os.FileMode = 0755
 )
 
-func extractZip(zr *zip.Reader, destDir safepaths.Absolute) error {
+func ExtractZip(zr *zip.Reader, destDir safepaths.Absolute) error {
 	for _, zf := range zr.File {
 		fpath, err := destDir.Join(zf.Name)
 		if err != nil {
