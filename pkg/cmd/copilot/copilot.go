@@ -48,12 +48,12 @@ func NewCmdCopilot(f *cmdutil.Factory, runF func(*CopilotOptions) error) *cobra.
 
             If already installed, it will use the version found in your PATH.
 
-            If not installed, it will be downloaded to %s.
+            If not installed, it will be downloaded to %[2]s.
 
-            Use --remove to remove the downloaded Copilot CLI.
+            Use %[1]s--remove%[1]s to remove the downloaded Copilot CLI.
 
             Learn more at https://gh.io/copilot-cli
-        `, copilotBinaryPath()),
+        `, "`", copilotBinaryPath()),
 		DisableFlagParsing: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if slices.Contains(args, "--help") || slices.Contains(args, "-h") {
