@@ -26,8 +26,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const copilotBinaryName = "copilot"
-
 type CopilotOptions struct {
 	IO         *iostreams.IOStreams
 	HttpClient func() (*http.Client, error)
@@ -55,7 +53,7 @@ func NewCmdCopilot(f *cmdutil.Factory, runF func(*CopilotOptions) error) *cobra.
             Use --remove to remove the downloaded Copilot CLI.
 
             Learn more at https://gh.io/copilot-cli
-        `, filepath.Join(config.DataDir(), "copilot")),
+        `, copilotBinaryPath()),
 		DisableFlagParsing: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 1 && slices.Contains(args, "--remove") {
@@ -117,6 +115,12 @@ func runCopilot(opts *CopilotOptions) error {
 	return nil
 }
 
+const copilotBinaryName = "copilot"
+
+func copilotBinaryPath() string {
+	return filepath.Join(config.DataDir(), copilotBinaryName)
+}
+
 func ensureCopilot(httpClient *http.Client, io *iostreams.IOStreams) (string, error) {
 	// First check if copilot is in PATH
 	if path, err := exec.LookPath(copilotBinaryName); err == nil {
@@ -124,7 +128,7 @@ func ensureCopilot(httpClient *http.Client, io *iostreams.IOStreams) (string, er
 	}
 
 	// Check in gh's data directory
-	installDir := filepath.Join(config.DataDir(), "copilot")
+	installDir := copilotBinaryPath()
 	binaryName := copilotBinaryName
 	if runtime.GOOS == "windows" {
 		binaryName += ".exe"
@@ -316,7 +320,7 @@ func extractFile(target string, mode os.FileMode, r io.Reader) (err error) {
 }
 
 func removeCopilot() error {
-	installDir := filepath.Join(config.DataDir(), "copilot")
+	installDir := copilotBinaryPath()
 	return removeCopilotFromDir(installDir)
 }
 
