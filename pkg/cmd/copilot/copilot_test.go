@@ -43,7 +43,7 @@ import (
 // 	}
 // }
 
-func TestNewCmdEdit(t *testing.T) {
+func TestNewCmdCopilot(t *testing.T) {
 	tests := []struct {
 		name     string
 		args     string
@@ -51,8 +51,11 @@ func TestNewCmdEdit(t *testing.T) {
 		wantsErr string
 	}{
 		{
-			name:     "no argument",
-			args:     "",
+			name: "no argument",
+			args: "",
+			output: CopilotOptions{
+				Args: []string{},
+			},
 			wantsErr: "",
 		},
 		{
