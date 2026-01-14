@@ -132,13 +132,15 @@ func copilotBinaryPath() string {
 	return filepath.Join(config.DataDir(), copilotBinaryName)
 }
 
+// ensureCopilot checks if the Copilot CLI is installed, and if not, downloads and installs it.
+// It returns the path to the Copilot binary in the following order of precedence:
+// 1. `copilot` in the PATH
+// 2. `copilot` in gh's data directory
 func ensureCopilot(httpClient *http.Client, io *iostreams.IOStreams) (string, error) {
-	// First check if copilot is in PATH
 	if path, err := exec.LookPath(copilotBinaryName); err == nil {
 		return path, nil
 	}
 
-	// Check in gh's data directory
 	installDir := copilotBinaryPath()
 	binaryName := copilotBinaryName
 	if runtime.GOOS == "windows" {
