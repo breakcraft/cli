@@ -23,6 +23,8 @@ import (
 	"github.com/cli/cli/v2/pkg/cmdutil"
 	"github.com/cli/cli/v2/pkg/iostreams"
 	"github.com/spf13/cobra"
+
+	ghzip "github.com/cli/cli/v2/internal/zip"
 )
 
 type CopilotOptions struct {
@@ -362,42 +364,27 @@ func extractZip(path, destDir string) error {
 		return fmt.Errorf("failed to open zip: %w", err)
 	}
 
+	absPath, err := safepaths.ParseAbsolute(destDir)
+	if err != nil {
+		return err
+	}
+
+	// As of the time of writing, ghzip.ExtractZip will safely skip files that
+	// would result in path traversal. This is an issue for our use-case because
+	// we want to error out before extracting if there's any such file.
+	// To avoid breaking the shared ghzip.ExtractZip code that expects unsafe
+	// paths to be ignored and no error produced, we pre-validate here,
+	// producing an error if any such file is found.
 	for _, f := range zipReader.File {
-		absPath, err := safepaths.ParseAbsolute(destDir)
+		_, err := absPath.Join(f.Name)
 		if err != nil {
 			return err
-		}
-		absPath, err = absPath.Join(f.Name)
-		if err != nil {
-			return err
-		}
-		target := absPath.String()
-
-		if f.FileInfo().IsDir() {
-			if err := os.MkdirAll(target, 0755); err != nil {
-				return fmt.Errorf("failed to create directory: %w", err)
-			}
-			continue
-		}
-
-		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-			return fmt.Errorf("failed to create parent directory: %w", err)
-		}
-
-		rc, err := f.Open()
-		if err != nil {
-			return fmt.Errorf("failed to open file in zip: %w", err)
-		}
-
-		if err := extractFile(target, f.Mode(), rc); err != nil {
-			if cerr := rc.Close(); cerr != nil {
-				return fmt.Errorf("failed to close file in zip after error: %v; original error: %w", cerr, err)
-			}
-			return err
-		}
-		if err := rc.Close(); err != nil {
-			return fmt.Errorf("failed to close file in zip: %w", err)
 		}
 	}
+
+	if err := ghzip.ExtractZip(&zipReader.Reader, absPath); err != nil {
+		return err
+	}
+
 	return nil
 }
