@@ -150,9 +150,7 @@ func TestRemoveCopilot(t *testing.T) {
 		installDir := filepath.Join(tmpDir, "copilot")
 
 		err := removeCopilotFromDir(installDir)
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
+		require.ErrorContains(t, err, "failed to remove Copilot CLI: Copilot CLI not installed through `gh`")
 	})
 }
 

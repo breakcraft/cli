@@ -155,7 +155,6 @@ func ensureCopilot(httpClient *http.Client, io *iostreams.IOStreams) (string, er
 	return downloadCopilot(httpClient, io, installDir, localPath)
 }
 
-
 // downloadCopilot downloads and installs the Copilot CLI to installDir.
 // It returns the path to the installed Copilot binary.
 func downloadCopilot(httpClient *http.Client, ios *iostreams.IOStreams, installDir, localPath string) (string, error) {
@@ -383,6 +382,10 @@ func extractFile(target string, mode os.FileMode, r io.Reader) (err error) {
 
 func removeCopilot() error {
 	installDir := copilotBinaryPath()
+	if _, err := os.Stat(installDir); os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove Copilot CLI: Copilot CLI not installed through `gh`")
+	}
+
 	return removeCopilotFromDir(installDir)
 }
 
