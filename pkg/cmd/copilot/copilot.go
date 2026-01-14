@@ -275,6 +275,40 @@ func fetchExpectedChecksum(client *http.Client, checksumsURL, archiveName string
 	return "", fmt.Errorf("checksum not found for %s", archiveName)
 }
 
+// extractZip reads a ZIP archive at path and extracts its contents into destDir.
+// It returns an error if the archive cannot be read,
+// or if any file or directory within the archive cannot be created or written.
+func extractZip(path, destDir string) error {
+	zipReader, err := zip.OpenReader(path)
+	if err != nil {
+		return fmt.Errorf("failed to open zip: %w", err)
+	}
+
+	absPath, err := safepaths.ParseAbsolute(destDir)
+	if err != nil {
+		return err
+	}
+
+	// As of the time of writing, ghzip.ExtractZip will safely skip files that
+	// would result in path traversal. This is an issue for our use-case because
+	// we want to error out before extracting if there's any such file.
+	// To avoid breaking the shared ghzip.ExtractZip code that expects unsafe
+	// paths to be ignored and no error produced, we pre-validate here,
+	// producing an error if any such file is found.
+	for _, f := range zipReader.File {
+		_, err := absPath.Join(f.Name)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := ghzip.ExtractZip(&zipReader.Reader, absPath); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // extractTarGz reads a TAR.GZ archive from r and extracts its contents into destDir.
 // It returns an error if the archive cannot be read,
 // or if any file or directory within the archive cannot be created or written.
@@ -352,39 +386,5 @@ func removeCopilotFromDir(installDir string) error {
 	if err := os.RemoveAll(installDir); err != nil {
 		return fmt.Errorf("failed to remove Copilot CLI: %w", err)
 	}
-	return nil
-}
-
-// extractZip reads a ZIP archive at path and extracts its contents into destDir.
-// It returns an error if the archive cannot be read,
-// or if any file or directory within the archive cannot be created or written.
-func extractZip(path, destDir string) error {
-	zipReader, err := zip.OpenReader(path)
-	if err != nil {
-		return fmt.Errorf("failed to open zip: %w", err)
-	}
-
-	absPath, err := safepaths.ParseAbsolute(destDir)
-	if err != nil {
-		return err
-	}
-
-	// As of the time of writing, ghzip.ExtractZip will safely skip files that
-	// would result in path traversal. This is an issue for our use-case because
-	// we want to error out before extracting if there's any such file.
-	// To avoid breaking the shared ghzip.ExtractZip code that expects unsafe
-	// paths to be ignored and no error produced, we pre-validate here,
-	// producing an error if any such file is found.
-	for _, f := range zipReader.File {
-		_, err := absPath.Join(f.Name)
-		if err != nil {
-			return err
-		}
-	}
-
-	if err := ghzip.ExtractZip(&zipReader.Reader, absPath); err != nil {
-		return err
-	}
-
 	return nil
 }
