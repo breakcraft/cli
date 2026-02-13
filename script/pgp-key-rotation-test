@@ -109,7 +109,7 @@ gpgkey=http://localhost:8085/pgp-key.gpg
 # We can enable GPG check for repository metadata; we don't have this in our provided .repo file so it's kept disabled to mimic the actual repo.
 repo_gpgcheck=0
 # (5 seconds). This is to make dnf/yum fetch new metadata when running 'dnf update' and eliminate the need to add '--refresh'. The default is 48 hours which is too much for the purpose of this PoC.
-metadata_expire=5
+metadata_expire=1
 " > "$ARTIFACTS_DIR/rpm-repo/example.repo"
 
   header "> 1. Add K2 (expires in 15 mins) (keyring: K1 + K2)"
@@ -443,6 +443,19 @@ apt_teardown() {
     apt-get update
 }
 
+dnf_install() {
+  if [ "$(readlink $(command -v dnf))" = "dnf5" ]; then
+    statepath="/tmp/dnf5-state"
+    if ! [ -f "$statepath" ]; then
+      touch "$statepath"
+      dnf config-manager addrepo --from-repofile=http://localhost:8085/rpm-repo/example.repo
+      dnf install hello-world
+    else
+      dnf update hello-world
+    fi
+  fi
+}
+
 # Function to start up Docker container for environment
 docker_setup() {
   # If the repo-server container already exists, prompt the user whether to tear it down
@@ -510,6 +523,8 @@ elif [ "$1" == "apt_install" ]; then
   apt_install
 elif [ "$1" == "apt_teardown" ]; then
   apt_teardown
+elif [ "$1" == "dnf_install" ]; then
+  dnf_install
 elif [ "$1" == "docker_client_teardown" ]; then
   shift 1
   docker_client_teardown "${@}"
@@ -530,6 +545,7 @@ The following targets are typical order used to setup and exercise the GitHub CL
 - $(bold 'docker_client_teardown <image>'):  (client) stop and remove Docker container
 - $(bold apt_install):                     (client) install packages from apt repository
 - $(bold apt_teardown):                    (client) remove apt sources list and installed packages
+- $(bold dnf_install):                     (client) install packages from dnf repository
 "
   exit 1
 fi
