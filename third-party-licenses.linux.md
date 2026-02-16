@@ -178,6 +178,7 @@ Some packages may only be included on certain architectures or operating systems
 - [golang.org/x/sys](https://pkg.go.dev/golang.org/x/sys) ([BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.40.0:LICENSE))
 - [golang.org/x/term](https://pkg.go.dev/golang.org/x/term) ([BSD-3-Clause](https://cs.opensource.google/go/x/term/+/v0.39.0:LICENSE))
 - [golang.org/x/text](https://pkg.go.dev/golang.org/x/text) ([BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.33.0:LICENSE))
+- [golang.org/x/tools](https://pkg.go.dev/golang.org/x/tools) ([BSD-3-Clause](https://cs.opensource.google/go/x/tools/+/v0.40.0:LICENSE))
 - [google.golang.org/genproto/googleapis/api](https://pkg.go.dev/google.golang.org/genproto/googleapis/api) ([Apache-2.0](https://github.com/googleapis/go-genproto/blob/ff82c1b0f217/googleapis/api/LICENSE))
 - [google.golang.org/genproto/googleapis/rpc/status](https://pkg.go.dev/google.golang.org/genproto/googleapis/rpc/status) ([Apache-2.0](https://github.com/googleapis/go-genproto/blob/0a764e51fe1b/googleapis/rpc/LICENSE))
 - [google.golang.org/grpc](https://pkg.go.dev/google.golang.org/grpc) ([Apache-2.0](https://github.com/grpc/grpc-go/blob/v1.78.0/LICENSE))
