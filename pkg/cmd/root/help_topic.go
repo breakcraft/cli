@@ -91,6 +91,9 @@ var HelpTopics = []helpTopic{
 			available in the viewport. When the value is a percentage, it will be applied against
 			the number of columns available in the current viewport.
 
+			%[1]sGH_TABLE_LAYOUT%[1]s: set to %[1]svertical%[1]s to render header-based tables as key/value entries
+			instead of columns.
+
 			%[1]sGH_NO_UPDATE_NOTIFIER%[1]s: set to any value to disable GitHub CLI update notifications.
 			When any command is executed, gh checks for new versions once every 24 hours.
 			If a newer version was found, an upgrade notice is displayed on standard error.
