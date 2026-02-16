@@ -50,6 +50,9 @@ jobs:
         with:
           version: v2.6.0
 
+      - name: Feature detection lint
+        run: go run ./pkg/linter/featuredetection/cmd/featuredetection-lint ./...
+
       # actions/setup-go does not setup the installed toolchain to be preferred over the system install,
       # which causes go-licenses to raise "Package ... does not have module info" errors.
       # For more information, https://github.com/google/go-licenses/issues/244#issuecomment-1885098633
