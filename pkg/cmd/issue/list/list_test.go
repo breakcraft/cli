@@ -172,6 +172,20 @@ func TestIssueList_withInvalidLimitFlag(t *testing.T) {
 	}
 }
 
+func TestIssueList_withConflictingHierarchyFlags(t *testing.T) {
+	http := &httpmock.Registry{}
+	defer http.Verify(t)
+
+	_, err := runCommand(http, true, "--parent 10 --no-parent")
+	require.Error(t, err)
+	assert.EqualError(t, err, "specify only one of `--parent` or `--no-parent`")
+}
+
+func Test_appendSearchTerm(t *testing.T) {
+	assert.Equal(t, "label:bug parent-issue:\"OWNER/REPO#10\"", appendSearchTerm("label:bug", "parent-issue:\"OWNER/REPO#10\""))
+	assert.Equal(t, "no:parent", appendSearchTerm("", "no:parent"))
+}
+
 func TestIssueList_disabledIssues(t *testing.T) {
 	http := &httpmock.Registry{}
 	defer http.Verify(t)

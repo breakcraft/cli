@@ -45,7 +45,9 @@ func TestJSONFields(t *testing.T) {
 		"updatedAt",
 		"url",
 		"isPinned",
+		"parentIssue",
 		"stateReason",
+		"subIssues",
 	})
 }
 
@@ -374,6 +376,93 @@ func TestIssueView_disabledIssues(t *testing.T) {
 	if err == nil || err.Error() != "the 'OWNER/REPO' repository has disabled issues" {
 		t.Errorf("error running command `issue view`: %v", err)
 	}
+}
+
+func TestIssueView_hierarchy_tty(t *testing.T) {
+	http := &httpmock.Registry{}
+	defer http.Verify(t)
+
+	http.Register(
+		httpmock.GraphQL(`query IssueByNumber\b`),
+		httpmock.StringResponse(`
+			{
+				"data": {
+					"repository": {
+						"hasIssuesEnabled": true,
+						"issue": {
+							"__typename": "Issue",
+							"id": "ISSUEID",
+							"number": 20,
+							"url": "https://github.com/OWNER/REPO/issues/20",
+							"state": "OPEN",
+							"createdAt": "2020-01-01T00:00:00Z",
+							"title": "child issue",
+							"body": "body",
+							"author": {"login":"monalisa","id":"U1","name":"Mona"},
+							"comments": {"totalCount": 0, "nodes": []},
+							"assignees": {"totalCount":0,"nodes":[]},
+							"labels": {"totalCount":0,"nodes":[]},
+							"reactionGroups": [],
+							"parentIssue": {"id":"P1","number":10,"title":"parent issue","url":"https://github.com/OWNER/REPO/issues/10","state":"OPEN","repository":{"id":"R1","name":"REPO","owner":{"id":"O1","login":"OWNER"}}},
+							"subIssues": {"totalCount":1,"nodes":[{"id":"S1","number":21,"title":"sub one","url":"https://github.com/OWNER/REPO/issues/21","state":"OPEN","repository":{"id":"R1","name":"REPO","owner":{"id":"O1","login":"OWNER"}}}]}
+						}
+					}
+				}
+			}
+		`),
+	)
+	mockEmptyV2ProjectItems(t, http)
+
+	output, err := runCommand(http, true, "20 --sub-issues")
+	assert.NoError(t, err)
+	test.ExpectLines(t, output.String(),
+		`Parent: OWNER/REPO#10 parent issue`,
+		`Sub-issues: 1 issue`,
+		`- #21 sub one \(open\)`,
+	)
+}
+
+func TestIssueView_hierarchy_nontty(t *testing.T) {
+	http := &httpmock.Registry{}
+	defer http.Verify(t)
+
+	http.Register(
+		httpmock.GraphQL(`query IssueByNumber\b`),
+		httpmock.StringResponse(`
+			{
+				"data": {
+					"repository": {
+						"hasIssuesEnabled": true,
+						"issue": {
+							"__typename": "Issue",
+							"id": "ISSUEID",
+							"number": 20,
+							"url": "https://github.com/OWNER/REPO/issues/20",
+							"state": "OPEN",
+							"createdAt": "2020-01-01T00:00:00Z",
+							"title": "child issue",
+							"body": "body",
+							"author": {"login":"monalisa","id":"U1","name":"Mona"},
+							"comments": {"totalCount": 0, "nodes": []},
+							"assignees": {"totalCount":0,"nodes":[]},
+							"labels": {"totalCount":0,"nodes":[]},
+							"reactionGroups": [],
+							"parentIssue": {"id":"P1","number":10,"title":"parent issue","url":"https://github.com/OWNER/REPO/issues/10","state":"OPEN","repository":{"id":"R1","name":"REPO","owner":{"id":"O1","login":"OWNER"}}},
+							"subIssues": {"totalCount":1,"nodes":[{"id":"S1","number":21,"title":"sub one","url":"https://github.com/OWNER/REPO/issues/21","state":"OPEN","repository":{"id":"R1","name":"REPO","owner":{"id":"O1","login":"OWNER"}}}]}
+						}
+					}
+				}
+			}
+		`),
+	)
+	mockEmptyV2ProjectItems(t, http)
+
+	output, err := runCommand(http, false, "20")
+	assert.NoError(t, err)
+	test.ExpectLines(t, output.String(),
+		`parent:\tOWNER/REPO#10`,
+		`sub-issues:\t1`,
+	)
 }
 
 func TestIssueView_tty_Comments(t *testing.T) {

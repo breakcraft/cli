@@ -1,8 +1,10 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/cli/cli/v2/internal/ghrepo"
@@ -45,8 +47,58 @@ type Issue struct {
 	Milestone        *Milestone
 	ReactionGroups   ReactionGroups
 	IsPinned         bool
+	ParentIssue      *IssueTreeNode `json:"parentIssue,omitempty"`
+	SubIssues        SubIssues      `json:"subIssues"`
 
 	ClosedByPullRequestsReferences ClosedByPullRequestsReferences
+}
+
+type IssueTreeNode struct {
+	ID         string `json:"id"`
+	Number     int    `json:"number"`
+	Title      string `json:"title"`
+	URL        string `json:"url"`
+	State      string `json:"state"`
+	Repository struct {
+		ID    string `json:"id"`
+		Name  string `json:"name"`
+		Owner struct {
+			ID    string `json:"id"`
+			Login string `json:"login"`
+		} `json:"owner"`
+	} `json:"repository"`
+}
+
+type SubIssues struct {
+	Nodes      []IssueTreeNode `json:"nodes"`
+	TotalCount int             `json:"totalCount"`
+}
+
+func (s SubIssues) MarshalJSON() ([]byte, error) {
+	if s.Nodes == nil {
+		return json.Marshal([]IssueTreeNode{})
+	}
+	return json.Marshal(s.Nodes)
+}
+
+func (s *SubIssues) UnmarshalJSON(data []byte) error {
+	var nodes []IssueTreeNode
+	if err := json.Unmarshal(data, &nodes); err == nil {
+		s.Nodes = nodes
+		s.TotalCount = len(nodes)
+		return nil
+	}
+
+	var payload struct {
+		Nodes      []IssueTreeNode `json:"nodes"`
+		TotalCount int             `json:"totalCount"`
+	}
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return err
+	}
+	s.Nodes = payload.Nodes
+	s.TotalCount = payload.TotalCount
+	return nil
 }
 
 type ClosedByPullRequestsReferences struct {
@@ -411,4 +463,151 @@ func (i Issue) Identifier() string {
 
 func (i Issue) CurrentUserComments() []Comment {
 	return i.Comments.CurrentUserComments()
+}
+
+type RESTIssueReference struct {
+	ID     int64  `json:"id"`
+	Number int    `json:"number"`
+	Title  string `json:"title"`
+	URL    string `json:"html_url"`
+	State  string `json:"state"`
+}
+
+func IssueParent(client *Client, repo ghrepo.Interface, issueNumber int) (*RESTIssueReference, error) {
+	path := fmt.Sprintf(
+		"repos/%s/%s/issues/%d/parent",
+		url.PathEscape(repo.RepoOwner()),
+		url.PathEscape(repo.RepoName()),
+		issueNumber,
+	)
+
+	var issue RESTIssueReference
+	if err := client.REST(repo.RepoHost(), "GET", path, nil, &issue); err != nil {
+		return nil, err
+	}
+
+	return &issue, nil
+}
+
+func IssueByNumber(client *Client, repo ghrepo.Interface, issueNumber int) (*RESTIssueReference, error) {
+	path := fmt.Sprintf(
+		"repos/%s/%s/issues/%d",
+		url.PathEscape(repo.RepoOwner()),
+		url.PathEscape(repo.RepoName()),
+		issueNumber,
+	)
+
+	var issue RESTIssueReference
+	if err := client.REST(repo.RepoHost(), "GET", path, nil, &issue); err != nil {
+		return nil, err
+	}
+
+	return &issue, nil
+}
+
+func IssueSubIssues(client *Client, repo ghrepo.Interface, issueNumber int) ([]RESTIssueReference, error) {
+	path := fmt.Sprintf(
+		"repos/%s/%s/issues/%d/sub_issues",
+		url.PathEscape(repo.RepoOwner()),
+		url.PathEscape(repo.RepoName()),
+		issueNumber,
+	)
+
+	var issues []RESTIssueReference
+	if err := client.REST(repo.RepoHost(), "GET", path, nil, &issues); err != nil {
+		return nil, err
+	}
+
+	return issues, nil
+}
+
+func AddIssueSubIssue(client *Client, repo ghrepo.Interface, issueNumber int, subIssueID int64, replaceParent bool) (*RESTIssueReference, error) {
+	path := fmt.Sprintf(
+		"repos/%s/%s/issues/%d/sub_issues",
+		url.PathEscape(repo.RepoOwner()),
+		url.PathEscape(repo.RepoName()),
+		issueNumber,
+	)
+
+	body := struct {
+		SubIssueID    int64 `json:"sub_issue_id"`
+		ReplaceParent bool  `json:"replace_parent,omitempty"`
+	}{
+		SubIssueID:    subIssueID,
+		ReplaceParent: replaceParent,
+	}
+
+	buf := &bytes.Buffer{}
+	if err := json.NewEncoder(buf).Encode(body); err != nil {
+		return nil, err
+	}
+
+	var issue RESTIssueReference
+	if err := client.REST(repo.RepoHost(), "POST", path, buf, &issue); err != nil {
+		return nil, err
+	}
+
+	return &issue, nil
+}
+
+func RemoveIssueSubIssue(client *Client, repo ghrepo.Interface, issueNumber int, subIssueID int64) (*RESTIssueReference, error) {
+	path := fmt.Sprintf(
+		"repos/%s/%s/issues/%d/sub_issue",
+		url.PathEscape(repo.RepoOwner()),
+		url.PathEscape(repo.RepoName()),
+		issueNumber,
+	)
+
+	body := struct {
+		SubIssueID int64 `json:"sub_issue_id"`
+	}{
+		SubIssueID: subIssueID,
+	}
+
+	buf := &bytes.Buffer{}
+	if err := json.NewEncoder(buf).Encode(body); err != nil {
+		return nil, err
+	}
+
+	var issue RESTIssueReference
+	if err := client.REST(repo.RepoHost(), "DELETE", path, buf, &issue); err != nil {
+		return nil, err
+	}
+
+	return &issue, nil
+}
+
+func ReprioritizeIssueSubIssue(client *Client, repo ghrepo.Interface, issueNumber int, subIssueID int64, beforeID, afterID *int64) (*RESTIssueReference, error) {
+	if (beforeID == nil) == (afterID == nil) {
+		return nil, fmt.Errorf("exactly one of beforeID or afterID must be provided")
+	}
+
+	path := fmt.Sprintf(
+		"repos/%s/%s/issues/%d/sub_issues/priority",
+		url.PathEscape(repo.RepoOwner()),
+		url.PathEscape(repo.RepoName()),
+		issueNumber,
+	)
+
+	body := struct {
+		SubIssueID int64  `json:"sub_issue_id"`
+		BeforeID   *int64 `json:"before_id,omitempty"`
+		AfterID    *int64 `json:"after_id,omitempty"`
+	}{
+		SubIssueID: subIssueID,
+		BeforeID:   beforeID,
+		AfterID:    afterID,
+	}
+
+	buf := &bytes.Buffer{}
+	if err := json.NewEncoder(buf).Encode(body); err != nil {
+		return nil, err
+	}
+
+	var issue RESTIssueReference
+	if err := client.REST(repo.RepoHost(), "PATCH", path, buf, &issue); err != nil {
+		return nil, err
+	}
+
+	return &issue, nil
 }

@@ -34,6 +34,8 @@ type EditOptions struct {
 
 	IssueNumbers []int
 	Interactive  bool
+	ParentIssue  string
+	RemoveParent bool
 
 	prShared.Editable
 }
@@ -51,6 +53,7 @@ func NewCmdEdit(f *cmdutil.Factory, runF func(*EditOptions) error) *cobra.Comman
 
 	var bodyFile string
 	var removeMilestone bool
+	var removeParent bool
 
 	cmd := &cobra.Command{
 		Use:   "edit {<numbers> | <urls>}",
@@ -74,6 +77,8 @@ func NewCmdEdit(f *cmdutil.Factory, runF func(*EditOptions) error) *cobra.Comman
 			$ gh issue edit 23 --add-project "Roadmap" --remove-project v1,v2
 			$ gh issue edit 23 --milestone "Version 1"
 			$ gh issue edit 23 --remove-milestone
+			$ gh issue edit 23 --parent 10
+			$ gh issue edit 23 --remove-parent
 			$ gh issue edit 23 --body-file body.txt
 			$ gh issue edit 23 34 --add-label "help wanted"
 		`),
@@ -126,6 +131,16 @@ func NewCmdEdit(f *cmdutil.Factory, runF func(*EditOptions) error) *cobra.Comman
 			); err != nil {
 				return err
 			}
+			if err := cmdutil.MutuallyExclusive(
+				"specify only one of `--parent` or `--remove-parent`",
+				flags.Changed("parent"),
+				removeParent,
+			); err != nil {
+				return err
+			}
+
+			opts.RemoveParent = removeParent
+			parentEdited := flags.Changed("parent") || opts.RemoveParent
 
 			if flags.Changed("title") {
 				opts.Editable.Title.Edited = true
@@ -148,7 +163,7 @@ func NewCmdEdit(f *cmdutil.Factory, runF func(*EditOptions) error) *cobra.Comman
 				// see the `Editable.MilestoneId` method.
 			}
 
-			if !opts.Editable.Dirty() {
+			if !opts.Editable.Dirty() && !parentEdited {
 				opts.Interactive = true
 			}
 
@@ -158,6 +173,9 @@ func NewCmdEdit(f *cmdutil.Factory, runF func(*EditOptions) error) *cobra.Comman
 
 			if opts.Interactive && len(opts.IssueNumbers) > 1 {
 				return cmdutil.FlagErrorf("multiple issues cannot be edited interactively")
+			}
+			if (flags.Changed("parent") || opts.RemoveParent) && len(opts.IssueNumbers) > 1 {
+				return cmdutil.FlagErrorf("parent relationship edits only support a single issue")
 			}
 
 			if runF != nil {
@@ -179,6 +197,8 @@ func NewCmdEdit(f *cmdutil.Factory, runF func(*EditOptions) error) *cobra.Comman
 	cmd.Flags().StringSliceVar(&opts.Editable.Projects.Remove, "remove-project", nil, "Remove the issue from projects by `title`")
 	cmd.Flags().StringVarP(&opts.Editable.Milestone.Value, "milestone", "m", "", "Edit the milestone the issue belongs to by `name`")
 	cmd.Flags().BoolVar(&removeMilestone, "remove-milestone", false, "Remove the milestone association from the issue")
+	cmd.Flags().StringVarP(&opts.ParentIssue, "parent", "P", "", "Set the parent issue by `number` or `url`")
+	cmd.Flags().BoolVar(&removeParent, "remove-parent", false, "Remove the parent issue relationship")
 
 	return cmd
 }
@@ -346,6 +366,40 @@ func editRun(opts *EditOptions) error {
 
 	if len(failedIssueErrors) > 0 {
 		return fmt.Errorf("failed to update %s", text.Pluralize(len(failedIssueErrors), "issue"))
+	}
+
+	if opts.ParentIssue != "" || opts.RemoveParent {
+		if len(issues) != 1 {
+			return fmt.Errorf("parent relationship edits only support a single issue")
+		}
+
+		apiClient := api.NewClientFromHTTP(httpClient)
+		issue := issues[0]
+		subIssue, err := api.IssueByNumber(apiClient, baseRepo, issue.Number)
+		if err != nil {
+			return err
+		}
+
+		if opts.ParentIssue != "" {
+			parentIssueNumber, parentRepoOpt, parseErr := shared.ParseIssueFromArg(opts.ParentIssue)
+			if parseErr != nil {
+				return parseErr
+			}
+			if parentRepo, present := parentRepoOpt.Value(); present && !ghrepo.IsSame(baseRepo, parentRepo) {
+				return fmt.Errorf("parent issue must be in the same repository")
+			}
+
+			_, err = api.AddIssueSubIssue(apiClient, baseRepo, parentIssueNumber, subIssue.ID, true)
+			return err
+		}
+
+		parentIssue, err := api.IssueParent(apiClient, baseRepo, issue.Number)
+		if err != nil {
+			return err
+		}
+
+		_, err = api.RemoveIssueSubIssue(apiClient, baseRepo, parentIssue.Number, subIssue.ID)
+		return err
 	}
 
 	return nil

@@ -198,6 +198,18 @@ func TestNewCmdCreate(t *testing.T) {
 			cli:      "--editor",
 			wantsErr: true,
 		},
+		{
+			name:     "parent flag",
+			tty:      false,
+			cli:      `-t mytitle -b body --parent 123`,
+			wantsErr: false,
+			wantsOpts: CreateOptions{
+				Title:       "mytitle",
+				Body:        "body",
+				ParentIssue: "123",
+				Interactive: false,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -247,6 +259,7 @@ func TestNewCmdCreate(t *testing.T) {
 			assert.Equal(t, tt.wantsOpts.WebMode, opts.WebMode)
 			assert.Equal(t, tt.wantsOpts.Interactive, opts.Interactive)
 			assert.Equal(t, tt.wantsOpts.Template, opts.Template)
+			assert.Equal(t, tt.wantsOpts.ParentIssue, opts.ParentIssue)
 		})
 	}
 }

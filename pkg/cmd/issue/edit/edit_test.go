@@ -281,6 +281,34 @@ func TestNewCmdEdit(t *testing.T) {
 			input:    "23 34",
 			wantsErr: true,
 		},
+		{
+			name:  "parent flag",
+			input: "23 --parent 10",
+			output: EditOptions{
+				IssueNumbers: []int{23},
+				ParentIssue:  "10",
+			},
+			wantsErr: false,
+		},
+		{
+			name:  "remove-parent flag",
+			input: "23 --remove-parent",
+			output: EditOptions{
+				IssueNumbers: []int{23},
+				RemoveParent: true,
+			},
+			wantsErr: false,
+		},
+		{
+			name:     "parent and remove-parent flags",
+			input:    "23 --parent 10 --remove-parent",
+			wantsErr: true,
+		},
+		{
+			name:     "parent relationship edits with multiple issues",
+			input:    "23 34 --parent 10",
+			wantsErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -322,6 +350,8 @@ func TestNewCmdEdit(t *testing.T) {
 			assert.Equal(t, tt.output.IssueNumbers, gotOpts.IssueNumbers)
 			assert.Equal(t, tt.output.Interactive, gotOpts.Interactive)
 			assert.Equal(t, tt.output.Editable, gotOpts.Editable)
+			assert.Equal(t, tt.output.ParentIssue, gotOpts.ParentIssue)
+			assert.Equal(t, tt.output.RemoveParent, gotOpts.RemoveParent)
 			if tt.expectedBaseRepo != nil {
 				baseRepo, err := gotOpts.BaseRepo()
 				require.NoError(t, err)

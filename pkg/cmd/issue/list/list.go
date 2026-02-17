@@ -37,6 +37,9 @@ type ListOptions struct {
 	Mention      string
 	Milestone    string
 	Search       string
+	ParentIssue  string
+	HasSubIssues bool
+	NoParent     bool
 	WebMode      bool
 	Exporter     cmdutil.Exporter
 
@@ -76,6 +79,9 @@ func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Comman
 			$ gh issue list --assignee "@me"
 			$ gh issue list --milestone "The big 1.0"
 			$ gh issue list --search "error no:assignee sort:created-asc"
+			$ gh issue list --parent 123
+			$ gh issue list --has-sub-issues
+			$ gh issue list --no-parent
 			$ gh issue list --state all
 		`),
 		Aliases: []string{"ls"},
@@ -95,6 +101,13 @@ func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Comman
 			if cmd.Flags().Changed("app") {
 				opts.Author = fmt.Sprintf("app/%s", appAuthor)
 			}
+			if err := cmdutil.MutuallyExclusive(
+				"specify only one of `--parent` or `--no-parent`",
+				cmd.Flags().Changed("parent"),
+				opts.NoParent,
+			); err != nil {
+				return err
+			}
 
 			if runF != nil {
 				return runF(opts)
@@ -113,6 +126,9 @@ func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Comman
 	cmd.Flags().StringVar(&opts.Mention, "mention", "", "Filter by mention")
 	cmd.Flags().StringVarP(&opts.Milestone, "milestone", "m", "", "Filter by milestone number or title")
 	cmd.Flags().StringVarP(&opts.Search, "search", "S", "", "Search issues with `query`")
+	cmd.Flags().StringVar(&opts.ParentIssue, "parent", "", "Filter by parent issue number or URL")
+	cmd.Flags().BoolVar(&opts.HasSubIssues, "has-sub-issues", false, "Filter to issues that have sub-issues")
+	cmd.Flags().BoolVar(&opts.NoParent, "no-parent", false, "Filter to issues with no parent issue")
 	cmdutil.AddJSONFlags(cmd, &opts.Exporter, api.IssueFields)
 
 	return cmd
@@ -166,6 +182,25 @@ func listRun(opts *ListOptions) error {
 		Milestone: opts.Milestone,
 		Search:    opts.Search,
 		Fields:    fields,
+	}
+
+	if opts.ParentIssue != "" {
+		parentIssue, parentRepo, err := issueShared.ParseIssueFromArg(opts.ParentIssue)
+		if err != nil {
+			return err
+		}
+		parentRepoRef := ghrepo.FullName(baseRepo)
+		if parsedRepo, ok := parentRepo.Value(); ok {
+			parentRepoRef = ghrepo.FullName(parsedRepo)
+		}
+		parentSearch := fmt.Sprintf(`parent-issue:"%s#%d"`, parentRepoRef, parentIssue)
+		filterOptions.Search = appendSearchTerm(filterOptions.Search, parentSearch)
+	}
+	if opts.HasSubIssues {
+		filterOptions.Search = appendSearchTerm(filterOptions.Search, "has:sub-issue")
+	}
+	if opts.NoParent {
+		filterOptions.Search = appendSearchTerm(filterOptions.Search, "no:parent-issue")
 	}
 
 	isTerminal := opts.IO.IsStdoutTTY()
@@ -229,6 +264,13 @@ func listRun(opts *ListOptions) error {
 	issueShared.PrintIssues(opts.IO, opts.Now(), "", len(listResult.Issues), listResult.Issues)
 
 	return nil
+}
+
+func appendSearchTerm(search, term string) string {
+	if strings.TrimSpace(search) == "" {
+		return term
+	}
+	return search + " " + term
 }
 
 func issueList(client *http.Client, detector fd.Detector, repo ghrepo.Interface, filters prShared.FilterOptions, limit int) (*api.IssuesAndTotalCount, error) {

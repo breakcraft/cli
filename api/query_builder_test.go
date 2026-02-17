@@ -30,7 +30,7 @@ func TestPullRequestGraphQL(t *testing.T) {
 		},
 		{
 			name:   "invalid fields",
-			fields: []string{"isPinned", "stateReason", "number"},
+			fields: []string{"isPinned", "stateReason", "parentIssue", "subIssues", "number"},
 			want:   "number",
 		},
 		{
@@ -78,6 +78,11 @@ func TestIssueGraphQL(t *testing.T) {
 			name:   "projectItems",
 			fields: []string{"projectItems"},
 			want:   `projectItems(first:100){nodes{id, project{id,title}, status:fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue{optionId,name}}},totalCount}`,
+		},
+		{
+			name:   "hierarchy fields",
+			fields: []string{"parentIssue", "subIssues"},
+			want:   `parentIssue:parent{id,number,title,url,state,repository{id,name,owner{id,login}}},subIssues(first:100){nodes{id,number,title,url,state,repository{id,name,owner{id,login}}},totalCount}`,
 		},
 	}
 	for _, tt := range tests {

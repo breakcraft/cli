@@ -35,6 +35,7 @@ type ViewOptions struct {
 	IssueNumber int
 	WebMode     bool
 	Comments    bool
+	SubIssues   bool
 	Exporter    cmdutil.Exporter
 
 	Now func() time.Time
@@ -56,6 +57,11 @@ func NewCmdView(f *cmdutil.Factory, runF func(*ViewOptions) error) *cobra.Comman
 
 			With %[1]s--web%[1]s flag, open the issue in a web browser instead.
 		`, "`"),
+		Example: heredoc.Doc(`
+			$ gh issue view 123
+			$ gh issue view 123 --sub-issues
+			$ gh issue view 123 --json parentIssue,subIssues
+		`),
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			issueNumber, baseRepo, err := shared.ParseIssueFromArg(args[0])
@@ -84,6 +90,7 @@ func NewCmdView(f *cmdutil.Factory, runF func(*ViewOptions) error) *cobra.Comman
 
 	cmd.Flags().BoolVarP(&opts.WebMode, "web", "w", false, "Open an issue in the browser")
 	cmd.Flags().BoolVarP(&opts.Comments, "comments", "c", false, "View issue comments")
+	cmd.Flags().BoolVar(&opts.SubIssues, "sub-issues", false, "View sub-issues in expanded form")
 	cmdutil.AddJSONFlags(cmd, &opts.Exporter, api.IssueFields)
 
 	return cmd
@@ -91,7 +98,7 @@ func NewCmdView(f *cmdutil.Factory, runF func(*ViewOptions) error) *cobra.Comman
 
 var defaultFields = []string{
 	"number", "url", "state", "createdAt", "title", "body", "author", "milestone",
-	"assignees", "labels", "reactionGroups", "lastComment", "stateReason",
+	"assignees", "labels", "reactionGroups", "lastComment", "stateReason", "parentIssue", "subIssues",
 }
 
 func viewRun(opts *ViewOptions) error {
@@ -209,6 +216,12 @@ func printRawIssuePreview(out io.Writer, issue *api.Issue) error {
 		milestoneTitle = issue.Milestone.Title
 	}
 	fmt.Fprintf(out, "milestone:\t%s\n", milestoneTitle)
+	if issue.ParentIssue != nil {
+		fmt.Fprintf(out, "parent:\t%s#%d\n", issue.ParentIssue.Repository.Owner.Login+"/"+issue.ParentIssue.Repository.Name, issue.ParentIssue.Number)
+	} else {
+		fmt.Fprintf(out, "parent:\t\n")
+	}
+	fmt.Fprintf(out, "sub-issues:\t%d\n", issue.SubIssues.TotalCount)
 	fmt.Fprintf(out, "number:\t%d\n", issue.Number)
 	fmt.Fprintln(out, "--")
 	fmt.Fprintln(out, issue.Body)
@@ -251,6 +264,19 @@ func printHumanIssuePreview(opts *ViewOptions, baseRepo ghrepo.Interface, issue 
 	if issue.Milestone != nil {
 		fmt.Fprint(out, cs.Bold("Milestone: "))
 		fmt.Fprintln(out, issue.Milestone.Title)
+	}
+	if issue.ParentIssue != nil {
+		fmt.Fprint(out, cs.Bold("Parent: "))
+		fmt.Fprintf(out, "%s/%s#%d %s\n", issue.ParentIssue.Repository.Owner.Login, issue.ParentIssue.Repository.Name, issue.ParentIssue.Number, issue.ParentIssue.Title)
+	}
+	if issue.SubIssues.TotalCount > 0 {
+		fmt.Fprint(out, cs.Bold("Sub-issues: "))
+		fmt.Fprintln(out, text.Pluralize(issue.SubIssues.TotalCount, "issue"))
+		if opts.SubIssues {
+			for _, sub := range issue.SubIssues.Nodes {
+				fmt.Fprintf(out, "  - #%d %s (%s)\n", sub.Number, sub.Title, strings.ToLower(sub.State))
+			}
+		}
 	}
 
 	// Body

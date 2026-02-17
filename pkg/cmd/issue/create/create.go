@@ -13,6 +13,7 @@ import (
 	"github.com/cli/cli/v2/internal/gh"
 	"github.com/cli/cli/v2/internal/ghrepo"
 	"github.com/cli/cli/v2/internal/text"
+	issueShared "github.com/cli/cli/v2/pkg/cmd/issue/shared"
 	prShared "github.com/cli/cli/v2/pkg/cmd/pr/shared"
 	"github.com/cli/cli/v2/pkg/cmdutil"
 	"github.com/cli/cli/v2/pkg/iostreams"
@@ -41,11 +42,12 @@ type CreateOptions struct {
 	Body        string
 	Interactive bool
 
-	Assignees []string
-	Labels    []string
-	Projects  []string
-	Milestone string
-	Template  string
+	Assignees   []string
+	Labels      []string
+	Projects    []string
+	Milestone   string
+	Template    string
+	ParentIssue string
 }
 
 func NewCmdCreate(f *cmdutil.Factory, runF func(*CreateOptions) error) *cobra.Command {
@@ -83,6 +85,7 @@ func NewCmdCreate(f *cmdutil.Factory, runF func(*CreateOptions) error) *cobra.Co
 			$ gh issue create --assignee "@copilot"
 			$ gh issue create --project "Roadmap"
 			$ gh issue create --template "Bug Report"
+			$ gh issue create --title "Refactor parser" --body "..." --parent 123
 		`),
 		Args:    cmdutil.NoArgsQuoteReminder,
 		Aliases: []string{"new"},
@@ -138,6 +141,7 @@ func NewCmdCreate(f *cmdutil.Factory, runF func(*CreateOptions) error) *cobra.Co
 	cmd.Flags().StringSliceVarP(&opts.Labels, "label", "l", nil, "Add labels by `name`")
 	cmd.Flags().StringSliceVarP(&opts.Projects, "project", "p", nil, "Add the issue to projects by `title`")
 	cmd.Flags().StringVarP(&opts.Milestone, "milestone", "m", "", "Add the issue to a milestone by `name`")
+	cmd.Flags().StringVarP(&opts.ParentIssue, "parent", "P", "", "Add the issue as a sub-issue of the specified parent issue by `number` or `url`")
 	cmd.Flags().StringVar(&opts.RecoverFile, "recover", "", "Recover input from a failed run of create")
 	cmd.Flags().StringVarP(&opts.Template, "template", "T", "", "Template `name` to use as starting body text")
 
@@ -154,6 +158,18 @@ func createRun(opts *CreateOptions) (err error) {
 	baseRepo, err := opts.BaseRepo()
 	if err != nil {
 		return
+	}
+
+	parentIssueNumber := 0
+	if opts.ParentIssue != "" {
+		parsedParentIssueNumber, parentRepoOpt, parseErr := issueShared.ParseIssueFromArg(opts.ParentIssue)
+		if parseErr != nil {
+			return parseErr
+		}
+		parentIssueNumber = parsedParentIssueNumber
+		if parentRepo, present := parentRepoOpt.Value(); present && !ghrepo.IsSame(baseRepo, parentRepo) {
+			return fmt.Errorf("parent issue must be in the same repository as the new issue")
+		}
 	}
 
 	// TODO projectsV1Deprecation
@@ -377,6 +393,23 @@ func createRun(opts *CreateOptions) (err error) {
 		newIssue, err = api.IssueCreate(apiClient, repo, params)
 		if err != nil {
 			return
+		}
+
+		if parentIssueNumber > 0 {
+			newIssueNumber, _, parseErr := issueShared.ParseIssueFromArg(newIssue.URL)
+			if parseErr != nil {
+				return fmt.Errorf("issue created at %s but failed to parse issue number from URL: %w", newIssue.URL, parseErr)
+			}
+
+			subIssue, getIssueErr := api.IssueByNumber(apiClient, baseRepo, newIssueNumber)
+			if getIssueErr != nil {
+				return fmt.Errorf("issue created at %s but failed to fetch issue details for parent assignment: %w", newIssue.URL, getIssueErr)
+			}
+
+			_, err = api.AddIssueSubIssue(apiClient, baseRepo, parentIssueNumber, subIssue.ID, false)
+			if err != nil {
+				return fmt.Errorf("issue created at %s but failed to set parent issue #%d: %w", newIssue.URL, parentIssueNumber, err)
+			}
 		}
 
 		fmt.Fprintln(opts.IO.Out, newIssue.URL)
