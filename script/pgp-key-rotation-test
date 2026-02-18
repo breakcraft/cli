@@ -479,7 +479,7 @@ apt_install() {
   apt-get install -y hello-world
 }
 
-apt() {
+_apt() {
   stage="${1:-0}"
 
   apt-get update
@@ -518,20 +518,41 @@ dnf_install() {
     if ! [ -f "$statepath" ]; then
       touch "$statepath"
       dnf config-manager addrepo --from-repofile=http://localhost:8085/rpm-repo/example.repo
-      dnf install hello-world
+      dnf install -y hello-world
     else
-      dnf update hello-world
+      dnf update -y hello-world
     fi
   elif [ "$(readlink $(command -v dnf))" = "dnf-3" ]; then
     statepath="/tmp/dnf4-state"
     if ! [ -f "$statepath" ]; then
       touch "$statepath"
       dnf config-manager --add-repo http://localhost:8085/rpm-repo/example.repo
-      dnf install hello-world
+      dnf install -y hello-world
     else
-      dnf update hello-world
+      dnf update -y hello-world
     fi
   fi
+}
+
+_dnf() {
+  stage="${1:-0}"
+
+  dnf install -y 'dnf-command(config-manager)'
+
+  echo "$(bold ">> will start at stage $stage")"
+  while true; do
+    current_stage="$(curl -s http://localhost:8085/state)"
+    if [ "$current_stage" -ge "$stage" ]; then
+      echo "$(bold ">> starting stage $stage")"
+      if ! dnf_install; then
+        echo "$(bold ">> failed at stage $stage")"
+      else
+        echo "$(bold ">> finished stage $stage")"
+      fi
+      stage=$((current_stage + 1))
+    fi
+    sleep 1
+  done
 }
 
 yum_install() {
@@ -650,13 +671,16 @@ elif [ "$1" == "apt_install" ]; then
   apt_install
 elif [ "$1" == "apt" ]; then
   shift 1
-  apt "${@}"
+  _apt "${@}"
 elif [ "$1" == "apt_teardown" ]; then
   apt_teardown
 elif [ "$1" == "dnf_install" ]; then
   dnf_install
 elif [ "$1" == "dnf3_setup" ]; then
   dnf3_setup
+elif [ "$1" == "dnf" ]; then
+  shift 1
+  _dnf "${@}"
 elif [ "$1" == "yum_install" ]; then
   yum_install
 elif [ "$1" == "docker_client_teardown" ]; then
@@ -682,6 +706,7 @@ The following targets are typical order used to setup and exercise the GitHub CL
 - $(bold apt_install):                     (client) install packages from apt repository
 - $(bold 'apt <start-stage>'):               (client) run automatic client loop for apt repository
 - $(bold apt_teardown):                    (client) remove apt sources list and installed packages
+- $(bold 'dnf <start-stage>'):               (client) run automatic client loop for dnf repository
 - $(bold dnf_install):                     (client) install packages from dnf repository
 - $(bold dnf3_setup):                      (client) setup dnf3 environment
 - $(bold yum_install):                     (client) install packages from yum repository
