@@ -587,6 +587,42 @@ _yum() {
   done
 }
 
+zypper_install() {
+  statepath="/tmp/zypper-state"
+  if ! [ -f "$statepath" ]; then
+    touch "$statepath"
+    zypper addrepo http://localhost:8085/rpm-repo/example.repo
+    zypper ref
+    zypper install hello-world
+  else
+    zypper ref
+    zypper update hello-world
+  fi
+}
+
+_zypper() {
+  stage="${1:-0}"
+
+  if ! command -v curl; then
+    zypper install -y curl
+  fi
+
+  echo "$(bold ">> will start at stage $stage")"
+  while true; do
+    current_stage="$(curl -s http://localhost:8085/state)"
+    if [ "$current_stage" -ge "$stage" ]; then
+      echo "$(bold ">> starting stage $stage")"
+      if ! zypper_install; then
+        echo "$(bold ">> failed at stage $stage")"
+      else
+        echo "$(bold ">> finished stage $stage")"
+      fi
+      stage=$((current_stage + 1))
+    fi
+    sleep 1
+  done
+}
+
 # Function to start up Docker container for environment
 docker_setup() {
   # If the repo-server container already exists, prompt the user whether to tear it down
@@ -643,6 +679,7 @@ docker_client_loop_setup() {
   shift 3
 
   container_name="repo-client-${image//:/-}-${cmd}-${stage}"
+  container_name="${container_name//\//-}"
   if [ "$(docker ps -a -q -f "name=^$container_name\$")" ]; then
     read -p "Do you want to teardown the existing container and recreate it? (y/n): " choice
     if [[ "$choice" == "y" || "$choice" == "Y" ]]; then
@@ -664,6 +701,7 @@ docker_client_loop_teardown() {
   cmd="$2"
   stage="$3"
   container_name="repo-client-${image//:/-}-${cmd}-${stage}"
+  container_name="${container_name//\//-}"
   docker stop "$container_name" && docker rm "$container_name"
 }
 
@@ -707,6 +745,11 @@ elif [ "$1" == "yum_install" ]; then
 elif [ "$1" == "yum" ]; then
   shift 1
   _yum "${@}"
+elif [ "$1" == "zypper_install" ]; then
+  zypper_install
+elif [ "$1" == "zypper" ]; then
+  shift 1
+  _zypper "${@}"
 elif [ "$1" == "docker_client_teardown" ]; then
   shift 1
   docker_client_teardown "${@}"
@@ -735,6 +778,8 @@ The following targets are typical order used to setup and exercise the GitHub CL
 - $(bold dnf3_setup):                      (client) setup dnf3 environment
 - $(bold yum_install):                     (client) install packages from yum repository
 - $(bold 'yum <start-stage>'):               (client) run automatic client loop for yum repository
+- $(bold zypper_install):                  (client) install packages from zypper repository
+- $(bold 'zypper <start-stage>'):            (client) run automatic client loop for zypper repository
 "
   exit 1
 fi
