@@ -85,8 +85,7 @@ Expire-Date: seconds=$((1 * 60))
   GNUPGHOME="$ARTIFACTS_DIR/temp-gpg-home" gpg --armor --export > pgp-key.asc # ASCII version
   #GNUPGHOME="$ARTIFACTS_DIR/temp-gpg-home" gpg --export --export-options export-minimal > pgp-key.gpg # Binary version
 
-  # Old yum versions (e.g. on `amazonlinux:2.0.20201218.1`) do not play well with binary GPG files, that's why we have
-  # to ship the ASCII armored version as well.
+  # Old yum versions do not play well with binary GPG files, that's why we have to ship the ASCII armored version as well.
 
   KEY1_FINGERPRINT="$(GNUPGHOME="$ARTIFACTS_DIR/temp-gpg-home" gpg --list-keys --list-options show-only-fpr-mbox | cut -f1 -d' ' | head -n 1)"
   echo -n "$KEY1_FINGERPRINT" > "$ARTIFACTS_DIR/key1-fingerprint"
@@ -114,7 +113,7 @@ gpgkey=http://localhost:8085/pgp-key.asc
 # Test only fields:
 # We can enable GPG check for repository metadata; we don't have this in our provided .repo file so it's kept disabled to mimic the actual repo.
 repo_gpgcheck=0
-# (5 seconds). This is to make dnf/yum fetch new metadata when running 'dnf update' and eliminate the need to add '--refresh'. The default is 48 hours which is too much for the purpose of this PoC.
+# (1 second) This is to make dnf/yum fetch new metadata when running 'dnf update' and eliminate the need to add '--refresh'. The default is 48 hours which is too much for the purpose of this PoC.
 metadata_expire=1
 " > "$ARTIFACTS_DIR/rpm-repo/example.repo"
 
@@ -151,12 +150,10 @@ Expire-Date: seconds=$((15 * 60))
   KEY2_FINGERPRINT="$(echo "$added_key" | grep -E "^fpr:" | cut -f10 -d: | head -n1)"
   echo -n "$KEY2_FINGERPRINT" > "$ARTIFACTS_DIR/key2-fingerprint"
 
-  # we should concat individual pub-key armored exports, because old yum (e.g. on `amazonlinux:2.0.20201218.1`) does not
-  # support armored ASCII files with a single armored entry that contains more than one key. For this to work we should
-  # have individual ASCII armored entries (each for one key). This is important because it's crucial for our rollout
-  # process to have both keys available.
+  # we should concat individual pub-key armored exports, because dnf/yum do not correctly handle armored ASCII files
+  # with a single entry containing more than one key. For this to work we should have individual ASCII armored entries
+  # (each for one key). This is important because it's crucial for our rollout# process to have both keys available.
 
-  # GNUPGHOME="$ARTIFACTS_DIR/temp-gpg-home" gpg --armor --export > pgp-key.asc # ASCII version
   GNUPGHOME="$ARTIFACTS_DIR/temp-gpg-home" gpg --armor --export "$KEY1_FINGERPRINT" > pgp-key.asc # ASCII version
   GNUPGHOME="$ARTIFACTS_DIR/temp-gpg-home" gpg --armor --export "$KEY2_FINGERPRINT" >> pgp-key.asc # ASCII version
 
