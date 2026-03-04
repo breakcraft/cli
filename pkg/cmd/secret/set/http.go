@@ -11,6 +11,7 @@ import (
 	"github.com/cli/cli/v2/pkg/cmd/secret/shared"
 )
 
+// SecretPayload represents the request body for setting a secret.
 type SecretPayload struct {
 	EncryptedValue string  `json:"encrypted_value"`
 	Visibility     string  `json:"visibility,omitempty"`
@@ -18,6 +19,7 @@ type SecretPayload struct {
 	KeyID          string  `json:"key_id"`
 }
 
+// DependabotSecretPayload represents the request body for setting a Dependabot secret.
 type DependabotSecretPayload struct {
 	EncryptedValue string   `json:"encrypted_value"`
 	Visibility     string   `json:"visibility,omitempty"`
@@ -25,6 +27,7 @@ type DependabotSecretPayload struct {
 	KeyID          string   `json:"key_id"`
 }
 
+// PubKey represents a public key used for secret encryption.
 type PubKey struct {
 	ID  string `json:"key_id"`
 	Key string

@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdSecret creates the top-level secret command.
 func NewCmdSecret(f *cmdutil.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "secret <command>",

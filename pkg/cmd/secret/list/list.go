@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ListOptions holds the options for the secret list command.
 type ListOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -46,6 +47,7 @@ var secretFields = []string{
 
 const fieldNumSelectedRepos = "numSelectedRepos"
 
+// NewCmdList creates the secret list command.
 func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Command {
 	opts := &ListOptions{
 		IO:         f.IOStreams,
@@ -219,6 +221,7 @@ func listRun(opts *ListOptions) error {
 	return nil
 }
 
+// Secret represents a GitHub secret with its metadata.
 type Secret struct {
 	Name             string            `json:"name"`
 	UpdatedAt        time.Time         `json:"updated_at"`
@@ -227,6 +230,7 @@ type Secret struct {
 	NumSelectedRepos int               `json:"num_selected_repos"`
 }
 
+// ExportData returns secret fields as a map for JSON export.
 func (s *Secret) ExportData(fields []string) map[string]interface{} {
 	return cmdutil.StructExportData(s, fields)
 }

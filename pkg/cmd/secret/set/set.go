@@ -24,6 +24,7 @@ import (
 	"golang.org/x/crypto/nacl/box"
 )
 
+// SetOptions holds the options for the secret set command.
 type SetOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -45,6 +46,7 @@ type SetOptions struct {
 	Application     string
 }
 
+// NewCmdSet creates the secret set command.
 func NewCmdSet(f *cmdutil.Factory, runF func(*SetOptions) error) *cobra.Command {
 	opts := &SetOptions{
 		IO:         f.IOStreams,

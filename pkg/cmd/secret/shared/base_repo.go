@@ -10,10 +10,12 @@ import (
 	"github.com/cli/cli/v2/pkg/iostreams"
 )
 
+// AmbiguousBaseRepoError indicates that multiple remotes were detected.
 type AmbiguousBaseRepoError struct {
 	Remotes ghContext.Remotes
 }
 
+// Error returns the error message for AmbiguousBaseRepoError.
 func (e AmbiguousBaseRepoError) Error() string {
 	return "multiple remotes detected. please specify which repo to use by providing the -R, --repo argument"
 }
@@ -21,6 +23,7 @@ func (e AmbiguousBaseRepoError) Error() string {
 type baseRepoFn func() (ghrepo.Interface, error)
 type remotesFn func() (ghContext.Remotes, error)
 
+// PromptWhenAmbiguousBaseRepoFunc wraps a base repo function to prompt on ambiguity.
 func PromptWhenAmbiguousBaseRepoFunc(baseRepoFn baseRepoFn, ios *iostreams.IOStreams, prompter prompter.Prompter) baseRepoFn {
 	return func() (ghrepo.Interface, error) {
 		baseRepo, err := baseRepoFn()
