@@ -15,6 +15,8 @@ const uuidPattern = `[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}
 var sessionIDRegexp = regexp.MustCompile(fmt.Sprintf("^%s$", uuidPattern))
 var agentSessionURLRegexp = regexp.MustCompile(fmt.Sprintf("^/agent-sessions/(%s)$", uuidPattern))
 
+// CapiClientFunc is documented here.
+// CapiClientFunc returns a factory function that creates an authenticated Copilot API client.
 func CapiClientFunc(f *cmdutil.Factory) func() (capi.CapiClient, error) {
 	return func() (capi.CapiClient, error) {
 		cfg, err := f.Config()
@@ -34,6 +36,9 @@ func CapiClientFunc(f *cmdutil.Factory) func() (capi.CapiClient, error) {
 	}
 }
 
+// IsSessionID is documented here.
+
+// IsSessionID reports whether s is a valid session UUID.
 func IsSessionID(s string) bool {
 	return sessionIDRegexp.MatchString(s)
 }

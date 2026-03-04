@@ -15,6 +15,8 @@ import (
 
 //go:generate moq -rm -out log_mock.go . LogRenderer
 
+// LogRenderer is documented here.
+// LogRenderer renders agent task log output.
 type LogRenderer interface {
 	Follow(fetcher func() ([]byte, error), w io.Writer, io *iostreams.IOStreams) error
 	Render(logs []byte, w io.Writer, io *iostreams.IOStreams) (stop bool, err error)
@@ -22,6 +24,9 @@ type LogRenderer interface {
 
 type logRenderer struct{}
 
+// NewLogRenderer is documented here.
+
+// NewLogRenderer creates a new LogRenderer instance.
 func NewLogRenderer() LogRenderer {
 	return &logRenderer{}
 }

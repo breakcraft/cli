@@ -54,6 +54,8 @@ func newCAPITransport(token string, rp http.RoundTripper) *capiTransport {
 	}
 }
 
+// RoundTrip is documented here.
+// RoundTrip adds authorization and integration headers before delegating to the underlying transport.
 func (ct *capiTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Authorization", "Bearer "+ct.token)
 

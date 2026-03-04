@@ -15,6 +15,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// CommitsOptions is documented here.
+// CommitsOptions holds the options for the search commits command.
 type CommitsOptions struct {
 	Browser  browser.Browser
 	Exporter cmdutil.Exporter
@@ -25,6 +27,9 @@ type CommitsOptions struct {
 	WebMode  bool
 }
 
+// NewCmdCommits is documented here.
+
+// NewCmdCommits returns a cobra command for searching commits on GitHub.
 func NewCmdCommits(f *cmdutil.Factory, runF func(*CommitsOptions) error) *cobra.Command {
 	var order string
 	var sort string

@@ -48,8 +48,13 @@ func SessionStateString(state string) string {
 	}
 }
 
+// ColorFunc is documented here.
+// ColorFunc is a function that applies terminal color formatting to a string.
 type ColorFunc func(string) string
 
+// SessionSymbol is documented here.
+
+// SessionSymbol returns a status icon for the given session state.
 func SessionSymbol(cs *iostreams.ColorScheme, state string) string {
 	noColor := func(s string) string { return s }
 	switch state {

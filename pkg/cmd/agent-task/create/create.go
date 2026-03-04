@@ -46,6 +46,8 @@ func defaultLogRenderer() shared.LogRenderer {
 	return shared.NewLogRenderer()
 }
 
+// NewCmdCreate is documented here.
+// NewCmdCreate returns a cobra command for creating a new agent task.
 func NewCmdCreate(f *cmdutil.Factory, runF func(*CreateOptions) error) *cobra.Command {
 	opts := &CreateOptions{
 		IO:          f.IOStreams,

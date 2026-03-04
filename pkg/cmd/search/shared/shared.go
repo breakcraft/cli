@@ -15,6 +15,8 @@ import (
 	"github.com/cli/cli/v2/pkg/search"
 )
 
+// EntityType is documented here.
+// EntityType represents the kind of entity to search for (issues, pull requests, or both).
 type EntityType int
 
 const (
@@ -22,22 +24,32 @@ const (
 	// https://docs.github.com/en/rest/reference/search
 	SearchMaxResults = 1000
 
+// Both is documented here.
+
+	// Issues is documented here.
+	// Both searches for issues and pull requests.
 	Both EntityType = iota
+	// Issues searches only for issues.
 	Issues
+	// IssuesOptions is documented here.
+	// PullRequests searches only for pull requests.
 	PullRequests
 )
 
+// IssuesOptions holds the options for searching issues and pull requests.
 type IssuesOptions struct {
 	Browser  browser.Browser
 	Entity   EntityType
 	Exporter cmdutil.Exporter
 	IO       *iostreams.IOStreams
 	Now      time.Time
+	// Searcher is documented here.
 	Query    search.Query
 	Searcher search.Searcher
 	WebMode  bool
 }
 
+// Searcher creates a new search.Searcher using the factory's configuration.
 func Searcher(f *cmdutil.Factory) (search.Searcher, error) {
 	cfg, err := f.Config()
 	if err != nil {
@@ -50,11 +62,14 @@ func Searcher(f *cmdutil.Factory) (search.Searcher, error) {
 		return nil, err
 	}
 
+// SearchIssues is documented here.
+
 	detector := fd.NewDetector(client, host)
 
 	return search.NewSearcher(client, host, detector), nil
 }
 
+// SearchIssues executes a search for issues or pull requests and displays the results.
 func SearchIssues(opts *IssuesOptions) error {
 	io := opts.IO
 	if opts.WebMode {

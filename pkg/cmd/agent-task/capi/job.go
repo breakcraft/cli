@@ -34,17 +34,24 @@ type Job struct {
 	ErrorInfo *JobError `json:"error,omitempty"`
 }
 
+// JobActor is documented here.
+// JobActor represents the user who initiated an agent task job.
 type JobActor struct {
 	ID    int    `json:"id"`
 	Login string `json:"login"`
 }
 
+// JobPullRequest is documented here.
+
+// JobPullRequest represents the pull request associated with an agent task job.
 type JobPullRequest struct {
 	ID      int    `json:"id"`
 	Number  int    `json:"number"`
 	BaseRef string `json:"base_ref,omitempty"`
+// JobError is documented here.
 }
 
+// JobError describes an error that occurred during an agent task job.
 type JobError struct {
 	Message            string `json:"message"`
 	ResponseStatusCode int    `json:"response_status_code,string"`

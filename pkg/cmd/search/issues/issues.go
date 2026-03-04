@@ -10,6 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdIssues is documented here.
+// NewCmdIssues returns a cobra command for searching issues on GitHub.
 func NewCmdIssues(f *cmdutil.Factory, runF func(*shared.IssuesOptions) error) *cobra.Command {
 	var locked, includePrs bool
 	var noAssignee, noLabel, noMilestone, noProject bool

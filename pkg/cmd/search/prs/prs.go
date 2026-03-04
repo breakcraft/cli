@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdPrs is documented here.
+// NewCmdPrs returns a cobra command for searching pull requests on GitHub.
 func NewCmdPrs(f *cmdutil.Factory, runF func(*shared.IssuesOptions) error) *cobra.Command {
 	var locked, merged bool
 	var noAssignee, noLabel, noMilestone, noProject bool

@@ -16,6 +16,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// CodeOptions is documented here.
+// CodeOptions holds the options for the search code command.
 type CodeOptions struct {
 	Browser  browser.Browser
 	Config   func() (gh.Config, error)
@@ -26,6 +28,9 @@ type CodeOptions struct {
 	WebMode  bool
 }
 
+// NewCmdCode is documented here.
+
+// NewCmdCode returns a cobra command for searching code on GitHub.
 func NewCmdCode(f *cmdutil.Factory, runF func(*CodeOptions) error) *cobra.Command {
 	opts := &CodeOptions{
 		Browser: f.Browser,

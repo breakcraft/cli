@@ -29,6 +29,8 @@ const (
 	defaultLogPollInterval = 5 * time.Second
 )
 
+// ViewOptions is documented here.
+// ViewOptions holds the options for the agent-task view command.
 type ViewOptions struct {
 	IO         *iostreams.IOStreams
 	BaseRepo   func() (ghrepo.Interface, error)
@@ -54,6 +56,9 @@ func defaultLogRenderer() shared.LogRenderer {
 	return shared.NewLogRenderer()
 }
 
+// NewCmdView is documented here.
+
+// NewCmdView returns a cobra command for viewing an agent task.
 func NewCmdView(f *cmdutil.Factory, runF func(*ViewOptions) error) *cobra.Command {
 	opts := &ViewOptions{
 		IO:          f.IOStreams,

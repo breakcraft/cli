@@ -12,6 +12,8 @@ import (
 	searchReposCmd "github.com/cli/cli/v2/pkg/cmd/search/repos"
 )
 
+// NewCmdSearch is documented here.
+// NewCmdSearch returns a cobra command for searching GitHub resources.
 func NewCmdSearch(f *cmdutil.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "search <command>",

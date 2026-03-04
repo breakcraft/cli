@@ -20,10 +20,15 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
+// AgentsHomeURL is documented here.
+// AgentsHomeURL is the URL for the Copilot agents home page.
 const AgentsHomeURL = "https://github.com/copilot/agents"
 
 var defaultSessionsPerPage = 50
 
+// ErrSessionNotFound is documented here.
+
+// ErrSessionNotFound is returned when a session cannot be found.
 var ErrSessionNotFound = errors.New("not found")
 
 // session is an in-flight agent task
@@ -95,8 +100,10 @@ type Session struct {
 
 	PullRequest *api.PullRequest
 	User        *api.GitHubUser
+// SessionError is documented here.
 }
 
+// SessionError represents an error returned by a session.
 type SessionError struct {
 	Code    string
 	Message string

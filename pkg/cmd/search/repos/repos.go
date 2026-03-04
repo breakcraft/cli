@@ -16,6 +16,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ReposOptions is documented here.
+// ReposOptions holds the options for the search repos command.
 type ReposOptions struct {
 	Browser  browser.Browser
 	Exporter cmdutil.Exporter
@@ -26,6 +28,9 @@ type ReposOptions struct {
 	WebMode  bool
 }
 
+// NewCmdRepos is documented here.
+
+// NewCmdRepos returns a cobra command for searching repositories on GitHub.
 func NewCmdRepos(f *cmdutil.Factory, runF func(*ReposOptions) error) *cobra.Command {
 	var order string
 	var sort string
