@@ -23,6 +23,7 @@ import (
 )
 
 const (
+	// ConnectionTimeout is the maximum duration to wait for an RPC connection.
 	ConnectionTimeout = 5 * time.Second
 	requestTimeout    = 30 * time.Second
 )
@@ -35,10 +36,12 @@ const (
 	keepAliveEventName            = "keepAlive"
 )
 
+// StartSSHServerOptions contains configuration options for starting an SSH server.
 type StartSSHServerOptions struct {
 	UserPublicKeyFile string
 }
 
+// Invoker defines the interface for making RPC calls to a codespace.
 type Invoker interface {
 	Close() error
 	StartJupyterServer(ctx context.Context) (int, string, error)

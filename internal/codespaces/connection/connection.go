@@ -17,12 +17,14 @@ const (
 	clientName = "gh"
 )
 
+// TunnelClient wraps a tunnel client with connection tracking.
 type TunnelClient struct {
 	*tunnels.Client
 	connected bool
 	mu        sync.Mutex
 }
 
+// CodespaceConnection holds the tunnel connection state for a codespace.
 type CodespaceConnection struct {
 	tunnelProperties           api.TunnelProperties
 	TunnelManager              *tunnels.Manager

@@ -40,6 +40,7 @@ func WithSpecificPorts(ports map[int]tunnels.TunnelPort) mockClientOpt {
 	}
 }
 
+// NewMockHttpClient creates a mock HTTP client for tunnel API server testing.
 func NewMockHttpClient(opts ...mockClientOpt) (*http.Client, error) {
 	mockClientOpts := &mockClientOpts{}
 	for _, opt := range opts {
@@ -281,10 +282,12 @@ func withAccessToken(accessToken string) func(*relayServer) {
 	}
 }
 
+// URL returns the base URL of the mock relay server.
 func (rs *relayServer) URL() string {
 	return rs.httpServer.URL
 }
 
+// Err returns a channel that receives relay server errors.
 func (rs *relayServer) Err() <-chan error {
 	return rs.errc
 }
@@ -297,6 +300,7 @@ func (rs *relayServer) sendError(err error) {
 	}
 }
 
+// ForwardPort sends a port-forward request through the mock relay server.
 func (rs *relayServer) ForwardPort(ctx context.Context, port uint16) error {
 	pfr := messages.NewPortForwardRequest("127.0.0.1", uint32(port))
 	b, err := pfr.Marshal()
@@ -361,6 +365,7 @@ func makeConnection(server *relayServer) http.HandlerFunc {
 	}
 }
 
+// Type returns the SSH request type string.
 func (sr *sshRequest) Type() string {
 	return sr.request.Type
 }
@@ -449,6 +454,7 @@ func newSocketConn(conn *websocket.Conn) *socketConn {
 	return &socketConn{Conn: conn}
 }
 
+// Read reads data from the underlying websocket connection.
 func (s *socketConn) Read(b []byte) (int, error) {
 	s.readMutex.Lock()
 	defer s.readMutex.Unlock()
@@ -476,6 +482,7 @@ func (s *socketConn) Read(b []byte) (int, error) {
 	return bytesRead, err
 }
 
+// Write writes data to the underlying websocket connection.
 func (s *socketConn) Write(b []byte) (int, error) {
 	s.writeMutex.Lock()
 	defer s.writeMutex.Unlock()
@@ -497,6 +504,7 @@ func (s *socketConn) Write(b []byte) (int, error) {
 	return n, nil
 }
 
+// SetDeadline sets the read and write deadlines on the websocket connection.
 func (s *socketConn) SetDeadline(deadline time.Time) error {
 	if err := s.Conn.SetReadDeadline(deadline); err != nil {
 		return err

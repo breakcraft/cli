@@ -17,14 +17,18 @@ import (
 // PostCreateStateStatus is a string value representing the different statuses a state can have.
 type PostCreateStateStatus string
 
+// String returns the title-cased string representation of the status.
 func (p PostCreateStateStatus) String() string {
 	return text.Title(string(p))
 }
 
 const (
+	// PostCreateStateRunning indicates the post-create command is currently running.
 	PostCreateStateRunning PostCreateStateStatus = "running"
+	// PostCreateStateSuccess indicates the post-create command completed successfully.
 	PostCreateStateSuccess PostCreateStateStatus = "succeeded"
-	PostCreateStateFailed  PostCreateStateStatus = "failed"
+	// PostCreateStateFailed indicates the post-create command failed.
+	PostCreateStateFailed PostCreateStateStatus = "failed"
 )
 
 // PostCreateState is a combination of a state and status value that is captured

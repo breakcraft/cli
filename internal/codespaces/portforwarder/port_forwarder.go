@@ -13,14 +13,19 @@ import (
 
 const (
 	githubSubjectId        = "1"
-	InternalPortLabel      = "InternalPort"
+	// InternalPortLabel is the label for internally managed codespace ports.
+	InternalPortLabel = "InternalPort"
+	// UserForwardedPortLabel is the label for user-forwarded codespace ports.
 	UserForwardedPortLabel = "UserForwardedPort"
 )
 
 const (
+	// PrivatePortVisibility restricts port access to the codespace owner.
 	PrivatePortVisibility = "private"
-	OrgPortVisibility     = "org"
-	PublicPortVisibility  = "public"
+	// OrgPortVisibility restricts port access to organization members.
+	OrgPortVisibility = "org"
+	// PublicPortVisibility makes the port publicly accessible.
+	PublicPortVisibility = "public"
 )
 
 const (
@@ -28,6 +33,7 @@ const (
 	trafficTypeOutput = "output"
 )
 
+// ForwardPortOpts specifies options for forwarding a port from a codespace.
 type ForwardPortOpts struct {
 	Port       int
 	Internal   bool
@@ -35,11 +41,13 @@ type ForwardPortOpts struct {
 	Visibility string
 }
 
+// CodespacesPortForwarder manages port forwarding for a codespace connection.
 type CodespacesPortForwarder struct {
 	connection      connection.CodespaceConnection
 	keepAliveReason chan string
 }
 
+// PortForwarder defines the interface for codespace port forwarding operations.
 type PortForwarder interface {
 	ForwardPortToListener(ctx context.Context, opts ForwardPortOpts, listener *net.TCPListener) error
 	ForwardPort(ctx context.Context, opts ForwardPortOpts) error

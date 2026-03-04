@@ -52,10 +52,14 @@ const (
 )
 
 const (
-	VSCSTargetLocal       = "local"
+	// VSCSTargetLocal is the VSCS target for local environments.
+	VSCSTargetLocal = "local"
+	// VSCSTargetDevelopment is the VSCS target for development environments.
 	VSCSTargetDevelopment = "development"
-	VSCSTargetPPE         = "ppe"
-	VSCSTargetProduction  = "production"
+	// VSCSTargetPPE is the VSCS target for pre-production environments.
+	VSCSTargetPPE = "ppe"
+	// VSCSTargetProduction is the VSCS target for production environments.
+	VSCSTargetProduction = "production"
 )
 
 // API is the interface to the codespace service.
@@ -218,6 +222,7 @@ type Codespace struct {
 	EnvironmentId                  string              `json:"environment_id"`
 }
 
+// CodespaceGitStatus represents the git status of a codespace.
 type CodespaceGitStatus struct {
 	Ahead                 int    `json:"ahead"`
 	Behind                int    `json:"behind"`
@@ -226,6 +231,7 @@ type CodespaceGitStatus struct {
 	HasUncommittedChanges bool   `json:"has_uncommitted_changes"`
 }
 
+// CodespaceMachine represents the machine configuration of a codespace.
 type CodespaceMachine struct {
 	Name            string `json:"name"`
 	DisplayName     string `json:"display_name"`
@@ -248,10 +254,12 @@ const (
 	CodespaceStateRebuilding = "Rebuilding"
 )
 
+// CodespaceConnection holds the connection details for a codespace.
 type CodespaceConnection struct {
 	TunnelProperties TunnelProperties `json:"tunnelProperties"`
 }
 
+// TunnelProperties contains the tunnel configuration for connecting to a codespace.
 type TunnelProperties struct {
 	ConnectAccessToken     string `json:"connectAccessToken"`
 	ManagePortsAccessToken string `json:"managePortsAccessToken"`
@@ -261,6 +269,7 @@ type TunnelProperties struct {
 	Domain                 string `json:"domain"`
 }
 
+// RuntimeConstraints defines the runtime constraints for a codespace.
 type RuntimeConstraints struct {
 	AllowedPortPrivacySettings []string `json:"allowed_port_privacy_settings"`
 }
@@ -303,6 +312,7 @@ var ViewCodespaceFields = []string{
 	"environmentId",
 }
 
+// ExportData returns a map of the codespace's fields for structured output.
 func (c *Codespace) ExportData(fields []string) map[string]interface{} {
 	v := reflect.ValueOf(c).Elem()
 	data := map[string]interface{}{}
@@ -342,6 +352,7 @@ func (c *Codespace) ExportData(fields []string) map[string]interface{} {
 	return data
 }
 
+// ListCodespacesOptions specifies the filtering options for listing codespaces.
 type ListCodespacesOptions struct {
 	OrgName  string
 	UserName string
@@ -443,6 +454,7 @@ func findNextPage(linkValue string) string {
 	return ""
 }
 
+// GetOrgMemberCodespace retrieves a codespace belonging to an organization member by name.
 func (a *API) GetOrgMemberCodespace(ctx context.Context, orgName string, userName string, codespaceName string) (*Codespace, error) {
 	perPage := 100
 	listURL := fmt.Sprintf("%s/orgs/%s/members/%s/codespaces?per_page=%d", a.githubAPI, orgName, userName, perPage)
@@ -564,6 +576,7 @@ func (a *API) StartCodespace(ctx context.Context, codespaceName string) error {
 	return nil
 }
 
+// StopCodespace stops a codespace by name, optionally scoped to an organization and user.
 func (a *API) StopCodespace(ctx context.Context, codespaceName string, orgName string, userName string) error {
 	var stopURL string
 	var spanName string
@@ -595,6 +608,7 @@ func (a *API) StopCodespace(ctx context.Context, codespaceName string, orgName s
 	return nil
 }
 
+// Machine represents a codespace machine type with its display name and prebuild availability.
 type Machine struct {
 	Name                 string `json:"name"`
 	DisplayName          string `json:"display_name"`
@@ -870,11 +884,13 @@ type startCreateRequest struct {
 
 var errProvisioningInProgress = errors.New("provisioning in progress")
 
+// AcceptPermissionsRequiredError indicates that the user must accept updated permissions before proceeding.
 type AcceptPermissionsRequiredError struct {
 	Message             string `json:"message"`
 	AllowPermissionsURL string `json:"allow_permissions_url"`
 }
 
+// Error returns the error message for the permissions-required error.
 func (e AcceptPermissionsRequiredError) Error() string {
 	return e.Message
 }
@@ -1002,6 +1018,7 @@ func (a *API) DeleteCodespace(ctx context.Context, codespaceName string, orgName
 	return nil
 }
 
+// DevContainerEntry represents a devcontainer.json file path and optional display name.
 type DevContainerEntry struct {
 	Path string `json:"path"`
 	Name string `json:"name,omitempty"`
@@ -1069,12 +1086,14 @@ func (a *API) ListDevContainers(ctx context.Context, repoID int, branch string, 
 	return devcontainers, nil
 }
 
+// EditCodespaceParams contains the parameters for editing a codespace.
 type EditCodespaceParams struct {
 	DisplayName        string `json:"display_name,omitempty"`
 	IdleTimeoutMinutes int    `json:"idle_timeout_minutes,omitempty"`
 	Machine            string `json:"machine,omitempty"`
 }
 
+// EditCodespace modifies a codespace's configuration such as display name, idle timeout, or machine type.
 func (a *API) EditCodespace(ctx context.Context, codespaceName string, params *EditCodespaceParams) (*Codespace, error) {
 	requestBody, err := json.Marshal(params)
 	if err != nil {
@@ -1136,6 +1155,7 @@ type getCodespaceRepositoryContentsResponse struct {
 	Content string `json:"content"`
 }
 
+// GetCodespaceRepositoryContents retrieves the contents of a file from a codespace's repository.
 func (a *API) GetCodespaceRepositoryContents(ctx context.Context, codespace *Codespace, path string) ([]byte, error) {
 	req, err := http.NewRequest(http.MethodGet, a.githubAPI+"/repos/"+codespace.Repository.FullName+"/contents/"+path, nil)
 	if err != nil {

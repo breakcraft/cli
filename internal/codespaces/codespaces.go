@@ -47,10 +47,12 @@ type progressIndicator interface {
 	StopProgressIndicator()
 }
 
+// TimeoutError represents an error caused by an operation exceeding its time limit.
 type TimeoutError struct {
 	message string
 }
 
+// Error returns the timeout error message.
 func (e *TimeoutError) Error() string {
 	return e.message
 }

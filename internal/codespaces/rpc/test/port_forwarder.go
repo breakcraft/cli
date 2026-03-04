@@ -10,6 +10,7 @@ import (
 	"github.com/microsoft/dev-tunnels/go/tunnels"
 )
 
+// PortForwarder is a no-op implementation of portforwarder.PortForwarder for testing.
 type PortForwarder struct{}
 
 // Close implements portforwarder.PortForwarder.
