@@ -19,7 +19,8 @@ import (
 )
 
 const (
-	DefaultLimit     = 30
+	// DefaultLimit is the default maximum number of attestations to fetch.
+	DefaultLimit = 30
 	maxLimitForFlag  = 1000
 	maxLimitForFetch = 100
 )
@@ -37,6 +38,7 @@ type FetchParams struct {
 	Initiator     string
 }
 
+// Validate checks that the required fetch parameters are set and within bounds.
 func (p *FetchParams) Validate() error {
 	if p.Digest == "" {
 		return fmt.Errorf("digest must be provided")
@@ -61,11 +63,13 @@ type httpClient interface {
 	Get(url string) (*http.Response, error)
 }
 
+// Client is the interface for fetching attestations and trust domain information.
 type Client interface {
 	GetByDigest(params FetchParams) ([]*Attestation, error)
 	GetTrustDomain() (string, error)
 }
 
+// LiveClient fetches attestations from the GitHub API.
 type LiveClient struct {
 	githubAPI  githubApiClient
 	httpClient httpClient
@@ -73,6 +77,7 @@ type LiveClient struct {
 	logger     *ioconfig.Handler
 }
 
+// NewLiveClient creates a new LiveClient with the given HTTP client, host, and logger.
 func NewLiveClient(hc *http.Client, host string, l *ioconfig.Handler) *LiveClient {
 	return &LiveClient{
 		githubAPI:  api.NewClientFromHTTP(hc),

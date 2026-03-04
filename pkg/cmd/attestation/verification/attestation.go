@@ -15,9 +15,13 @@ import (
 	"github.com/sigstore/sigstore-go/pkg/bundle"
 )
 
+// SLSAPredicateV1 is the predicate type URI for SLSA provenance v1.
 const SLSAPredicateV1 = "https://slsa.dev/provenance/v1"
 
+// ErrUnrecognisedBundleExtension is returned when a bundle file has an unsupported extension.
 var ErrUnrecognisedBundleExtension = errors.New("bundle file extension not supported, must be json or jsonl")
+
+// ErrEmptyBundleFile is returned when a bundle file contains no attestations.
 var ErrEmptyBundleFile = errors.New("provided bundle file is empty")
 
 // GetLocalAttestations returns a slice of attestations read from a local bundle file.
@@ -82,6 +86,7 @@ func loadBundlesFromJSONLinesFile(path string) ([]*api.Attestation, error) {
 	return attestations, nil
 }
 
+// GetOCIAttestations fetches attestations from an OCI registry for the given artifact.
 func GetOCIAttestations(client oci.Client, artifact artifact.DigestedArtifact) ([]*api.Attestation, error) {
 	attestations, err := client.GetAttestations(artifact.NameRef(), artifact.DigestWithAlg())
 	if err != nil {

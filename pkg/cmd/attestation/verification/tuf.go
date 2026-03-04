@@ -16,8 +16,10 @@ import (
 //go:embed embed/tuf-repo.github.com/root.json
 var githubRoot []byte
 
+// GitHubTUFMirror is the URL of GitHub's TUF repository mirror.
 const GitHubTUFMirror = "https://tuf-repo.github.com"
 
+// DefaultOptionsWithCacheSetting returns TUF options with sensible cache defaults for the current environment.
 func DefaultOptionsWithCacheSetting(tufMetadataDir o.Option[string], hc *http.Client) *tuf.Options {
 	opts := tuf.DefaultOptions()
 
@@ -45,6 +47,7 @@ func DefaultOptionsWithCacheSetting(tufMetadataDir o.Option[string], hc *http.Cl
 	return opts
 }
 
+// GitHubTUFOptions returns TUF options configured for GitHub's TUF repository.
 func GitHubTUFOptions(tufMetadataDir o.Option[string], hc *http.Client) *tuf.Options {
 	opts := DefaultOptionsWithCacheSetting(tufMetadataDir, hc)
 

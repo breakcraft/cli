@@ -20,8 +20,10 @@ import (
 )
 
 const (
+	// PublicGoodIssuerOrg is the certificate issuer organization for Sigstore's Public Good Instance.
 	PublicGoodIssuerOrg = "sigstore.dev"
-	GitHubIssuerOrg     = "GitHub, Inc."
+	// GitHubIssuerOrg is the certificate issuer organization for GitHub's Sigstore instance.
+	GitHubIssuerOrg = "GitHub, Inc."
 )
 
 // AttestationProcessingResult captures processing a given attestation's signature verification and policy evaluation
@@ -30,6 +32,7 @@ type AttestationProcessingResult struct {
 	VerificationResult *verify.VerificationResult `json:"verificationResult"`
 }
 
+// SigstoreConfig holds configuration for creating a Sigstore verifier.
 type SigstoreConfig struct {
 	TrustedRoot  string
 	Logger       *io.Handler
@@ -41,10 +44,12 @@ type SigstoreConfig struct {
 	TUFMetadataDir o.Option[string]
 }
 
+// SigstoreVerifier is the interface for verifying attestations using Sigstore.
 type SigstoreVerifier interface {
 	Verify(attestations []*api.Attestation, policy verify.PolicyBuilder) ([]*AttestationProcessingResult, error)
 }
 
+// LiveSigstoreVerifier verifies attestations against Sigstore trust roots.
 type LiveSigstoreVerifier struct {
 	Logger       *io.Handler
 	NoPublicGood bool
@@ -53,6 +58,7 @@ type LiveSigstoreVerifier struct {
 	Custom       map[string]*verify.Verifier
 }
 
+// ErrNoAttestationsVerified is returned when none of the provided attestations pass verification.
 var ErrNoAttestationsVerified = errors.New("no attestations were verified")
 
 // NewLiveSigstoreVerifier creates a new LiveSigstoreVerifier struct
@@ -275,6 +281,7 @@ func (v *LiveSigstoreVerifier) verify(attestation *api.Attestation, policy verif
 	}, nil
 }
 
+// Verify attempts to verify each attestation against the configured trust roots and policy.
 func (v *LiveSigstoreVerifier) Verify(attestations []*api.Attestation, policy verify.PolicyBuilder) ([]*AttestationProcessingResult, error) {
 	if len(attestations) == 0 {
 		return nil, ErrNoAttestationsVerified

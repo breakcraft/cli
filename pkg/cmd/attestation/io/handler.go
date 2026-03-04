@@ -8,12 +8,14 @@ import (
 	"github.com/cli/cli/v2/utils"
 )
 
+// Handler wraps IO streams for formatted output in attestation commands.
 type Handler struct {
 	ColorScheme  *iostreams.ColorScheme
 	IO           *iostreams.IOStreams
 	debugEnabled bool
 }
 
+// NewHandler creates a new Handler from the given IOStreams.
 func NewHandler(io *iostreams.IOStreams) *Handler {
 	enabled, _ := utils.IsDebugEnabled()
 
@@ -24,6 +26,7 @@ func NewHandler(io *iostreams.IOStreams) *Handler {
 	}
 }
 
+// NewTestHandler creates a Handler backed by test IO streams.
 func NewTestHandler() *Handler {
 	testIO, _, _, _ := iostreams.Test()
 	return NewHandler(testIO)
@@ -37,6 +40,7 @@ func (h *Handler) Printf(f string, v ...interface{}) (int, error) {
 	return fmt.Fprintf(h.IO.ErrOut, f, v...)
 }
 
+// OutPrintf writes the formatted arguments to the stdout writer.
 func (h *Handler) OutPrintf(f string, v ...interface{}) (int, error) {
 	return fmt.Fprintf(h.IO.Out, f, v...)
 }
@@ -49,10 +53,12 @@ func (h *Handler) Println(v ...interface{}) (int, error) {
 	return fmt.Fprintln(h.IO.ErrOut, v...)
 }
 
+// OutPrintln writes the arguments to the stdout writer with a trailing newline.
 func (h *Handler) OutPrintln(v ...interface{}) (int, error) {
 	return fmt.Fprintln(h.IO.Out, v...)
 }
 
+// VerbosePrint writes msg to stderr when debug mode is enabled.
 func (h *Handler) VerbosePrint(msg string) (int, error) {
 	if !h.debugEnabled || !h.IO.IsStdoutTTY() {
 		return 0, nil
@@ -61,6 +67,7 @@ func (h *Handler) VerbosePrint(msg string) (int, error) {
 	return fmt.Fprintln(h.IO.ErrOut, msg)
 }
 
+// VerbosePrintf writes the formatted string to stderr when debug mode is enabled.
 func (h *Handler) VerbosePrintf(f string, v ...interface{}) (int, error) {
 	if !h.debugEnabled || !h.IO.IsStdoutTTY() {
 		return 0, nil
@@ -68,6 +75,7 @@ func (h *Handler) VerbosePrintf(f string, v ...interface{}) (int, error) {
 	return fmt.Fprintf(h.IO.ErrOut, f, v...)
 }
 
+// PrintBulletPoints writes aligned key-value rows to stderr.
 func (h *Handler) PrintBulletPoints(rows [][]string) (int, error) {
 	if !h.IO.IsStdoutTTY() {
 		return 0, nil

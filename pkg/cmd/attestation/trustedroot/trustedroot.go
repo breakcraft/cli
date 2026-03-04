@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Options holds the configuration for the trusted-root command.
 type Options struct {
 	TufUrl      string
 	TufRootPath string
@@ -30,6 +31,7 @@ type Options struct {
 
 type tufClientInstantiator func(o *tuf.Options) (*tuf.Client, error)
 
+// NewTrustedRootCmd creates the attestation trusted-root command.
 func NewTrustedRootCmd(f *cmdutil.Factory, runF func(*Options) error) *cobra.Command {
 	opts := &Options{}
 	trustedRootCmd := cobra.Command{

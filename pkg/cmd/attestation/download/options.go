@@ -13,6 +13,7 @@ const (
 	maxLimit = 1000
 )
 
+// Options holds the configuration for the download command.
 type Options struct {
 	APIClient       api.Client
 	ArtifactPath    string
@@ -27,6 +28,7 @@ type Options struct {
 	Hostname        string
 }
 
+// AreFlagsValid validates that the download command flags are within acceptable bounds.
 func (opts *Options) AreFlagsValid() error {
 	// Check that limit is between 1 and 1000
 	if opts.Limit < minLimit || opts.Limit > maxLimit {

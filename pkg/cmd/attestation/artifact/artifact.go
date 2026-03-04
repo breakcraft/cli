@@ -54,6 +54,7 @@ func normalizeReference(reference string, pathSeparator rune) (normalized string
 	return filepath.Clean(reference), fileArtifactType, nil
 }
 
+// NewDigestedArtifactForRelease creates a DigestedArtifact for a release with a pre-computed digest.
 func NewDigestedArtifactForRelease(digest string, digestAlg string) (artifact *DigestedArtifact) {
 	return &DigestedArtifact{
 		digest:    digest,
@@ -61,6 +62,7 @@ func NewDigestedArtifactForRelease(digest string, digestAlg string) (artifact *D
 	}
 }
 
+// NewDigestedArtifact creates a DigestedArtifact from a file path or OCI reference.
 func NewDigestedArtifact(client oci.Client, reference, digestAlg string) (artifact *DigestedArtifact, err error) {
 	normalized, artifactType, err := normalizeReference(reference, os.PathSeparator)
 	if err != nil {
@@ -88,6 +90,7 @@ func (a *DigestedArtifact) DigestWithAlg() string {
 	return fmt.Sprintf("%s:%s", a.digestAlg, a.digest)
 }
 
+// NameRef returns the OCI name reference for the artifact, if available.
 func (a *DigestedArtifact) NameRef() name.Reference {
 	return a.nameRef
 }

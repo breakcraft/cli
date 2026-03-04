@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewDownloadCmd creates the attestation download command.
 func NewDownloadCmd(f *cmdutil.Factory, runF func(*Options) error) *cobra.Command {
 	opts := &Options{}
 	downloadCmd := &cobra.Command{

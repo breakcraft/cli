@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewVerifyCmd creates the attestation verify command.
 func NewVerifyCmd(f *cmdutil.Factory, runF func(*Options) error) *cobra.Command {
 	opts := &Options{}
 	verifyCmd := &cobra.Command{

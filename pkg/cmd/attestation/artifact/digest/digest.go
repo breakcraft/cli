@@ -10,7 +10,9 @@ import (
 )
 
 const (
+	// SHA256DigestAlgorithm identifies the SHA-256 digest algorithm.
 	SHA256DigestAlgorithm = "sha256"
+	// SHA512DigestAlgorithm identifies the SHA-512 digest algorithm.
 	SHA512DigestAlgorithm = "sha512"
 )
 
@@ -34,6 +36,7 @@ func ValidDigestAlgorithms() []string {
 	return validDigestAlgorithms[:]
 }
 
+// CalculateDigestWithAlgorithm computes the hex-encoded digest of r using the specified algorithm.
 func CalculateDigestWithAlgorithm(r io.Reader, alg string) (string, error) {
 	var h hash.Hash
 	switch alg {

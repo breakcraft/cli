@@ -11,12 +11,15 @@ import (
 	"github.com/cli/cli/v2/pkg/cmd/attestation/api"
 )
 
+// ErrAttestationFileCreation is returned when attestation data cannot be written to a file.
 var ErrAttestationFileCreation = fmt.Errorf("failed to write attestations to file")
 
+// MetadataStore is the interface for persisting downloaded attestation metadata.
 type MetadataStore interface {
 	createMetadataFile(artifactDigest string, attestationsResp []*api.Attestation) (string, error)
 }
 
+// LiveStore writes attestation metadata to the local filesystem.
 type LiveStore struct {
 	outputPath string
 }
@@ -71,6 +74,7 @@ func (s *LiveStore) createMetadataFile(artifactDigest string, attestationsResp [
 	return metadataFilePath, nil
 }
 
+// NewLiveStore creates a new LiveStore that writes to the given output path.
 func NewLiveStore(outputPath string) *LiveStore {
 	return &LiveStore{
 		outputPath: outputPath,

@@ -25,6 +25,7 @@ func BuildDigestPolicyOption(a artifact.DigestedArtifact) (verify.ArtifactPolicy
 	return verify.WithArtifactDigest(a.Algorithm(), decoded), nil
 }
 
+// EnforcementCriteria defines the policy requirements for attestation verification.
 type EnforcementCriteria struct {
 	Certificate   certificate.Summary
 	PredicateType string
@@ -32,6 +33,7 @@ type EnforcementCriteria struct {
 	SAN           string
 }
 
+// Valid checks that the enforcement criteria contain all required fields.
 func (c EnforcementCriteria) Valid() error {
 	if c.Certificate.Issuer == "" {
 		return fmt.Errorf("Issuer must be set")
@@ -51,6 +53,7 @@ func (c EnforcementCriteria) Valid() error {
 	return nil
 }
 
+// BuildPolicyInformation returns a human-readable summary of the policy criteria.
 func (c EnforcementCriteria) BuildPolicyInformation() string {
 	policyAttr := [][]string{}
 

@@ -16,9 +16,13 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 )
 
+// ErrDenied is returned when a registry denies access to the requested resource.
 var ErrDenied = errors.New("the provided token was denied access to the requested resource, please check the token's expiration and repository access")
+
+// ErrRegistryAuthz is returned when registry authentication fails.
 var ErrRegistryAuthz = errors.New("remote registry authorization failed, please authenticate with the registry and try again")
 
+// Client is the interface for interacting with an OCI container registry.
 type Client interface {
 	GetImageDigest(imgName string) (*v1.Hash, name.Reference, error)
 	GetAttestations(name name.Reference, digest string) ([]*api.Attestation, error)
@@ -36,11 +40,13 @@ func checkForUnauthorizedOrDeniedErr(err transport.Error) error {
 	return nil
 }
 
+// LiveClient is a production OCI registry client.
 type LiveClient struct {
 	parseReference func(string, ...name.Option) (name.Reference, error)
 	get            func(name.Reference, ...remote.Option) (*remote.Descriptor, error)
 }
 
+// ParseReference parses an OCI image reference string into a name.Reference.
 func (c LiveClient) ParseReference(ref string) (name.Reference, error) {
 	return c.parseReference(ref)
 }
@@ -68,6 +74,7 @@ func (c LiveClient) GetImageDigest(imgName string) (*v1.Hash, name.Reference, er
 	return &desc.Digest, name, nil
 }
 
+// GetAttestations fetches Sigstore attestation bundles from the OCI registry for the given reference.
 func (c LiveClient) GetAttestations(ref name.Reference, digest string) ([]*api.Attestation, error) {
 	attestations := make([]*api.Attestation, 0)
 

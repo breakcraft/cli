@@ -9,7 +9,9 @@ import (
 )
 
 var (
-	GitHubOIDCIssuer       = "https://token.actions.githubusercontent.com"
+	// GitHubOIDCIssuer is the OIDC issuer URL for GitHub Actions tokens.
+	GitHubOIDCIssuer = "https://token.actions.githubusercontent.com"
+	// GitHubTenantOIDCIssuer is the OIDC issuer URL template for GitHub Enterprise tenant tokens.
 	GitHubTenantOIDCIssuer = "https://token.actions.%s.ghe.com"
 )
 

@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewInspectCmd creates the attestation inspect command.
 func NewInspectCmd(f *cmdutil.Factory, runF func(*Options) error) *cobra.Command {
 	opts := &Options{}
 	inspectCmd := &cobra.Command{
@@ -133,10 +134,12 @@ func NewInspectCmd(f *cmdutil.Factory, runF func(*Options) error) *cobra.Command
 	return inspectCmd
 }
 
+// BundleInspectResult contains the results of inspecting one or more bundles.
 type BundleInspectResult struct {
 	InspectedBundles []BundleInspection `json:"inspectedBundles"`
 }
 
+// BundleInspection holds the inspection details for a single Sigstore bundle.
 type BundleInspection struct {
 	Authentic              bool                  `json:"authentic"`
 	Certificate            CertificateInspection `json:"certificate"`
@@ -145,12 +148,14 @@ type BundleInspection struct {
 	Statement              *in_toto.Statement    `json:"statement"`
 }
 
+// CertificateInspection holds the certificate summary and validity period.
 type CertificateInspection struct {
 	certificate.Summary
 	NotBefore time.Time `json:"notBefore"`
 	NotAfter  time.Time `json:"notAfter"`
 }
 
+// TlogEntryInspection holds the transparency log entry metadata.
 type TlogEntryInspection struct {
 	IntegratedTime time.Time
 	LogID          string

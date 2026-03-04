@@ -13,11 +13,13 @@ import (
 	"github.com/sigstore/sigstore-go/pkg/verify"
 )
 
+// MockSigstoreVerifier is a test double for the SigstoreVerifier interface.
 type MockSigstoreVerifier struct {
 	t           *testing.T
 	mockResults []*AttestationProcessingResult
 }
 
+// Verify returns preconfigured mock results or a default successful result.
 func (v *MockSigstoreVerifier) Verify([]*api.Attestation, verify.PolicyBuilder) ([]*AttestationProcessingResult, error) {
 	if v.mockResults != nil {
 		return v.mockResults, nil
@@ -50,6 +52,7 @@ func (v *MockSigstoreVerifier) Verify([]*api.Attestation, verify.PolicyBuilder) 
 	return results, nil
 }
 
+// NewMockSigstoreVerifier creates a MockSigstoreVerifier with default test results.
 func NewMockSigstoreVerifier(t *testing.T) *MockSigstoreVerifier {
 	result := BuildSigstoreJsMockResult(t)
 	results := []*AttestationProcessingResult{&result}
@@ -57,16 +60,20 @@ func NewMockSigstoreVerifier(t *testing.T) *MockSigstoreVerifier {
 	return &MockSigstoreVerifier{t, results}
 }
 
+// NewMockSigstoreVerifierWithMockResults creates a MockSigstoreVerifier with the given results.
 func NewMockSigstoreVerifierWithMockResults(t *testing.T, mockResults []*AttestationProcessingResult) *MockSigstoreVerifier {
 	return &MockSigstoreVerifier{t, mockResults}
 }
 
+// FailSigstoreVerifier is a test double that always returns a verification error.
 type FailSigstoreVerifier struct{}
 
+// Verify always returns an error for the FailSigstoreVerifier.
 func (v *FailSigstoreVerifier) Verify([]*api.Attestation, verify.PolicyBuilder) ([]*AttestationProcessingResult, error) {
 	return nil, fmt.Errorf("failed to verify attestations")
 }
 
+// BuildMockResult creates an AttestationProcessingResult with the given certificate extensions.
 func BuildMockResult(b *bundle.Bundle, buildConfigURI, buildSignerURI, sourceRepoOwnerURI, sourceRepoURI, issuer string) AttestationProcessingResult {
 	statement := &in_toto.Statement{}
 	statement.PredicateType = SLSAPredicateV1
@@ -92,6 +99,7 @@ func BuildMockResult(b *bundle.Bundle, buildConfigURI, buildSignerURI, sourceRep
 	}
 }
 
+// BuildSigstoreJsMockResult creates a mock result using the sigstore-js test bundle.
 func BuildSigstoreJsMockResult(t *testing.T) AttestationProcessingResult {
 	bundle := data.SigstoreBundle(t)
 	buildConfigURI := "https://github.com/sigstore/sigstore-js/.github/workflows/build.yml@refs/heads/main"
