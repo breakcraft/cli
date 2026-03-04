@@ -15,6 +15,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// GetOptions is documented here.
+// GetOptions holds the options for the variable get command.
 type GetOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -28,6 +30,9 @@ type GetOptions struct {
 	EnvName      string
 }
 
+// NewCmdGet is documented here.
+
+// NewCmdGet creates a new cobra command for retrieving a variable.
 func NewCmdGet(f *cmdutil.Factory, runF func(*GetOptions) error) *cobra.Command {
 	opts := &GetOptions{
 		IO:         f.IOStreams,

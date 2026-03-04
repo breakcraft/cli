@@ -24,6 +24,8 @@ type iprompter interface {
 	Input(string, string) (string, error)
 }
 
+// SetOptions is documented here.
+// SetOptions holds the options for the variable set command.
 type SetOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -40,6 +42,9 @@ type SetOptions struct {
 	EnvFile         string
 }
 
+// NewCmdSet is documented here.
+
+// NewCmdSet creates a new cobra command for setting a variable.
 func NewCmdSet(f *cmdutil.Factory, runF func(*SetOptions) error) *cobra.Command {
 	opts := &SetOptions{
 		IO:         f.IOStreams,

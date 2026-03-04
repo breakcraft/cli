@@ -10,6 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdVariable is documented here.
+// NewCmdVariable creates a new cobra command for managing GitHub Actions variables.
 func NewCmdVariable(f *cmdutil.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "variable <command>",

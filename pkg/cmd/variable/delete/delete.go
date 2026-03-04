@@ -14,6 +14,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// DeleteOptions is documented here.
+// DeleteOptions holds the options for the variable delete command.
 type DeleteOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -25,6 +27,9 @@ type DeleteOptions struct {
 	EnvName      string
 }
 
+// NewCmdDelete is documented here.
+
+// NewCmdDelete creates a new cobra command for deleting a variable.
 func NewCmdDelete(f *cmdutil.Factory, runF func(*DeleteOptions) error) *cobra.Command {
 	opts := &DeleteOptions{
 		IO:         f.IOStreams,
