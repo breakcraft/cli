@@ -67,12 +67,12 @@ func (s *stringSet) Contains(value string) bool {
 	return c
 }
 
-// Len returns the number of elements in stringSet.
+// Len returns the number of elements in the set.
 func (s *stringSet) Len() int {
 	return len(s.m)
 }
 
-// ToSlice performs the ToSlice operation on stringSet.
+// ToSlice returns the set elements as a slice.
 func (s *stringSet) ToSlice() []string {
 	return s.v
 }

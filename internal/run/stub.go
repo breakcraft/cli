@@ -12,7 +12,7 @@ const (
 	gitAuthRE = `-c credential(?:\..+)?\.helper= -c credential(?:\..+)?\.helper=!"[^"]+" auth git-credential `
 )
 
-// T defines the interface for t.
+// T is a minimal testing interface for use in command stubs.
 type T interface {
 	Helper()
 	Errorf(string, ...interface{})

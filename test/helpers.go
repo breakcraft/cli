@@ -17,7 +17,7 @@ func (c CmdOut) String() string {
 	return c.OutBuf.String()
 }
 
-// Stderr performs the Stderr operation on CmdOut.
+// Stderr returns the captured stderr output as a string.
 func (c CmdOut) Stderr() string {
 	return c.ErrBuf.String()
 }
@@ -44,7 +44,7 @@ func (s OutputStub) Run() error {
 	return nil
 }
 
-// T defines the interface for t.
+// T is a minimal testing interface for use in test helpers.
 type T interface {
 	Helper()
 	Errorf(string, ...interface{})
