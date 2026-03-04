@@ -9,6 +9,7 @@ import (
 	"github.com/cli/cli/v2/pkg/cmdutil"
 )
 
+// CodeFields is the list of supported field names for code search result export.
 var CodeFields = []string{
 	"path",
 	"repository",
@@ -24,6 +25,7 @@ var textMatchFields = []string{
 	"property",
 }
 
+// CommitFields is the list of supported field names for commit search result export.
 var CommitFields = []string{
 	"author",
 	"commit",
@@ -35,6 +37,7 @@ var CommitFields = []string{
 	"url",
 }
 
+// RepositoryFields is the list of supported field names for repository search result export.
 var RepositoryFields = []string{
 	"createdAt",
 	"defaultBranch",
@@ -66,6 +69,7 @@ var RepositoryFields = []string{
 	"watchersCount",
 }
 
+// IssueFields is the list of supported field names for issue search result export.
 var IssueFields = []string{
 	"assignees",
 	"author",
@@ -86,10 +90,12 @@ var IssueFields = []string{
 	"url",
 }
 
+// PullRequestFields is the list of supported field names for pull request search result export.
 var PullRequestFields = append(IssueFields,
 	"isDraft",
 )
 
+// CodeResult represents the response from a code search query.
 type CodeResult struct {
 	IncompleteResults bool   `json:"incomplete_results"`
 	Items             []Code `json:"items"`
@@ -97,6 +103,7 @@ type CodeResult struct {
 	Total int `json:"total_count"`
 }
 
+// CommitsResult represents the response from a commits search query.
 type CommitsResult struct {
 	IncompleteResults bool     `json:"incomplete_results"`
 	Items             []Commit `json:"items"`
@@ -104,6 +111,7 @@ type CommitsResult struct {
 	Total int `json:"total_count"`
 }
 
+// RepositoriesResult represents the response from a repositories search query.
 type RepositoriesResult struct {
 	IncompleteResults bool         `json:"incomplete_results"`
 	Items             []Repository `json:"items"`
@@ -111,6 +119,7 @@ type RepositoriesResult struct {
 	Total int `json:"total_count"`
 }
 
+// IssuesResult represents the response from an issues search query.
 type IssuesResult struct {
 	IncompleteResults bool    `json:"incomplete_results"`
 	Items             []Issue `json:"items"`
@@ -118,6 +127,7 @@ type IssuesResult struct {
 	Total int `json:"total_count"`
 }
 
+// Code represents a single code search result item.
 type Code struct {
 	Name        string      `json:"name"`
 	Path        string      `json:"path"`
@@ -127,6 +137,7 @@ type Code struct {
 	URL         string      `json:"html_url"`
 }
 
+// TextMatch represents a text fragment with highlighted matches in a code search result.
 type TextMatch struct {
 	Fragment string  `json:"fragment"`
 	Matches  []Match `json:"matches"`
@@ -134,11 +145,13 @@ type TextMatch struct {
 	Property string  `json:"property"`
 }
 
+// Match represents an individual matched substring within a TextMatch fragment.
 type Match struct {
 	Indices []int  `json:"indices"`
 	Text    string `json:"text"`
 }
 
+// Commit represents a single commit search result item.
 type Commit struct {
 	Author    User       `json:"author"`
 	Committer User       `json:"committer"`
@@ -150,6 +163,7 @@ type Commit struct {
 	URL       string     `json:"html_url"`
 }
 
+// CommitInfo contains the detailed commit metadata such as author, committer, and message.
 type CommitInfo struct {
 	Author       CommitUser `json:"author"`
 	CommentCount int        `json:"comment_count"`
@@ -158,21 +172,25 @@ type CommitInfo struct {
 	Tree         Tree       `json:"tree"`
 }
 
+// CommitUser represents the author or committer identity within a commit.
 type CommitUser struct {
 	Date  time.Time `json:"date"`
 	Email string    `json:"email"`
 	Name  string    `json:"name"`
 }
 
+// Tree represents a Git tree object referenced by a commit.
 type Tree struct {
 	Sha string `json:"sha"`
 }
 
+// Parent represents a parent commit reference in a commit search result.
 type Parent struct {
 	Sha string `json:"sha"`
 	URL string `json:"html_url"`
 }
 
+// Repository represents a GitHub repository returned by a search query.
 type Repository struct {
 	CreatedAt       time.Time `json:"created_at"`
 	DefaultBranch   string    `json:"default_branch"`
@@ -205,12 +223,14 @@ type Repository struct {
 	WatchersCount   int       `json:"watchers_count"`
 }
 
+// License represents a repository's license information.
 type License struct {
 	Key  string `json:"key"`
 	Name string `json:"name"`
 	URL  string `json:"url"`
 }
 
+// User represents a GitHub user or bot account.
 type User struct {
 	GravatarID string `json:"gravatar_id"`
 	ID         string `json:"node_id"`
@@ -220,6 +240,7 @@ type User struct {
 	URL        string `json:"html_url"`
 }
 
+// Issue represents a single issue or pull request search result item.
 type Issue struct {
 	Assignees         []User    `json:"assignees"`
 	Author            User      `json:"user"`
@@ -245,11 +266,13 @@ type Issue struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
+// PullRequest contains pull request-specific fields embedded in an Issue result.
 type PullRequest struct {
 	URL      string    `json:"html_url"`
 	MergedAt time.Time `json:"merged_at"`
 }
 
+// Label represents a label attached to an issue or pull request.
 type Label struct {
 	Color       string `json:"color"`
 	Description string `json:"description"`
@@ -257,6 +280,7 @@ type Label struct {
 	Name        string `json:"name"`
 }
 
+// IsBot reports whether the user is a bot account (identified by having no node ID).
 func (u User) IsBot() bool {
 	// copied from api/queries_issue.go
 	// would ideally be shared, but it would require coordinating a "user"
@@ -264,6 +288,7 @@ func (u User) IsBot() bool {
 	return u.ID == ""
 }
 
+// ExportData returns the user's fields as a map for serialization.
 func (u User) ExportData() map[string]interface{} {
 	isBot := u.IsBot()
 	login := u.Login
@@ -279,6 +304,7 @@ func (u User) ExportData() map[string]interface{} {
 	}
 }
 
+// ExportData returns the selected fields of a code result as a map for serialization.
 func (code Code) ExportData(fields []string) map[string]interface{} {
 	v := reflect.ValueOf(code)
 	data := map[string]interface{}{}
@@ -298,10 +324,12 @@ func (code Code) ExportData(fields []string) map[string]interface{} {
 	return data
 }
 
+// ExportData returns the selected fields of a text match as a map for serialization.
 func (textMatch TextMatch) ExportData(fields []string) map[string]interface{} {
 	return cmdutil.StructExportData(textMatch, fields)
 }
 
+// ExportData returns the selected fields of a commit result as a map for serialization.
 func (commit Commit) ExportData(fields []string) map[string]interface{} {
 	v := reflect.ValueOf(commit)
 	data := map[string]interface{}{}
@@ -357,6 +385,7 @@ func (commit Commit) ExportData(fields []string) map[string]interface{} {
 	return data
 }
 
+// ExportData returns the selected fields of a repository result as a map for serialization.
 func (repo Repository) ExportData(fields []string) map[string]interface{} {
 	v := reflect.ValueOf(repo)
 	data := map[string]interface{}{}
@@ -378,6 +407,7 @@ func (repo Repository) ExportData(fields []string) map[string]interface{} {
 	return data
 }
 
+// MarshalJSON implements custom JSON marshaling for Repository with a subset of fields.
 func (repo Repository) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
 		"id":            repo.ID,
@@ -398,10 +428,12 @@ func (issue Issue) State() string {
 	return issue.StateInternal
 }
 
+// IsPullRequest reports whether the issue is actually a pull request.
 func (issue Issue) IsPullRequest() bool {
 	return issue.PullRequest.URL != ""
 }
 
+// ExportData returns the selected fields of an issue result as a map for serialization.
 func (issue Issue) ExportData(fields []string) map[string]interface{} {
 	v := reflect.ValueOf(issue)
 	data := map[string]interface{}{}

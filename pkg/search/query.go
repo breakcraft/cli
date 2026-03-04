@@ -9,12 +9,17 @@ import (
 )
 
 const (
+	// KindRepositories is the search kind for repository searches.
 	KindRepositories = "repositories"
-	KindCode         = "code"
-	KindIssues       = "issues"
-	KindCommits      = "commits"
+	// KindCode is the search kind for code searches.
+	KindCode = "code"
+	// KindIssues is the search kind for issue and pull request searches.
+	KindIssues = "issues"
+	// KindCommits is the search kind for commit searches.
+	KindCommits = "commits"
 )
 
+// Query represents a GitHub search query with keywords, qualifiers, and pagination options.
 type Query struct {
 	// Keywords holds the list of keywords to search for. These keywords are
 	// treated as individual components of a search query, and will get quoted
@@ -39,6 +44,7 @@ type Query struct {
 	Sort       string
 }
 
+// Qualifiers represents the set of search qualifier key-value pairs used to filter search results.
 type Qualifiers struct {
 	Archived            *bool
 	Assignee            string
@@ -234,6 +240,7 @@ func groupWithOR(qualifier string, vs []string) string {
 	return fmt.Sprintf("(%s)", strings.Join(all, " OR "))
 }
 
+// Map returns the qualifiers as a map of kebab-case keys to their string values.
 func (q Qualifiers) Map() map[string][]string {
 	m := map[string][]string{}
 	v := reflect.ValueOf(q)

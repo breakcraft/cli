@@ -25,6 +25,8 @@ var linkRE = regexp.MustCompile(`<([^>]+)>;\s*rel="([^"]+)"`)
 var pageRE = regexp.MustCompile(`(\?|&)page=(\d*)`)
 var jsonTypeRE = regexp.MustCompile(`[/+]json($|;)`)
 
+// Searcher defines the interface for performing GitHub search queries.
+//
 //go:generate moq -rm -out searcher_mock.go . Searcher
 type Searcher interface {
 	Code(Query) (CodeResult, error)
@@ -54,6 +56,7 @@ type httpErrorItem struct {
 	Resource string
 }
 
+// NewSearcher creates a new Searcher backed by the given HTTP client and host.
 func NewSearcher(client *http.Client, host string, detector fd.Detector) Searcher {
 	return &searcher{
 		client:   client,
@@ -62,6 +65,7 @@ func NewSearcher(client *http.Client, host string, detector fd.Detector) Searche
 	}
 }
 
+// Code performs a code search and returns matching results.
 func (s searcher) Code(query Query) (CodeResult, error) {
 	result := CodeResult{}
 
@@ -102,6 +106,7 @@ func (s searcher) Code(query Query) (CodeResult, error) {
 	return result, nil
 }
 
+// Commits performs a commit search and returns matching results.
 func (s searcher) Commits(query Query) (CommitsResult, error) {
 	result := CommitsResult{}
 
@@ -130,6 +135,7 @@ func (s searcher) Commits(query Query) (CommitsResult, error) {
 	return result, nil
 }
 
+// Repositories performs a repository search and returns matching results.
 func (s searcher) Repositories(query Query) (RepositoriesResult, error) {
 	result := RepositoriesResult{}
 
@@ -158,6 +164,7 @@ func (s searcher) Repositories(query Query) (RepositoriesResult, error) {
 	return result, nil
 }
 
+// Issues performs an issue and pull request search and returns matching results.
 func (s searcher) Issues(query Query) (IssuesResult, error) {
 	result := IssuesResult{}
 
@@ -287,6 +294,7 @@ func (s searcher) URL(query Query) string {
 	return url
 }
 
+// Error returns a human-readable description of the HTTP error.
 func (err httpError) Error() string {
 	if err.StatusCode != 422 || len(err.Errors) == 0 {
 		return fmt.Sprintf("HTTP %d: %s (%s)", err.StatusCode, err.Message, err.RequestURL)
