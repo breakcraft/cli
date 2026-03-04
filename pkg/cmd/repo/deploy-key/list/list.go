@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ListOptions holds the options for the deploy key list command.
 type ListOptions struct {
 	IO         *iostreams.IOStreams
 	HTTPClient func() (*http.Client, error)
@@ -28,6 +29,7 @@ var deployKeyFields = []string{
 	"readOnly",
 }
 
+// NewCmdList creates a new command to list deploy keys for a repository.
 func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Command {
 	opts := &ListOptions{
 		IO:         f.IOStreams,

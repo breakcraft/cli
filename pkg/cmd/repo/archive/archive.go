@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ArchiveOptions holds the options for the archive command.
 type ArchiveOptions struct {
 	HttpClient func() (*http.Client, error)
 	Config     func() (gh.Config, error)
@@ -26,6 +27,7 @@ type ArchiveOptions struct {
 	Prompter   prompter.Prompter
 }
 
+// NewCmdArchive creates a new command to archive a repository.
 func NewCmdArchive(f *cmdutil.Factory, runF func(*ArchiveOptions) error) *cobra.Command {
 	opts := &ArchiveOptions{
 		IO:         f.IOStreams,

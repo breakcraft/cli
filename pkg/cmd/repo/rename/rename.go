@@ -22,6 +22,7 @@ type iprompter interface {
 	Confirm(string, bool) (bool, error)
 }
 
+// RenameOptions holds the options for the rename command.
 type RenameOptions struct {
 	HttpClient      func() (*http.Client, error)
 	GitClient       *git.Client
@@ -35,6 +36,7 @@ type RenameOptions struct {
 	newRepoSelector string
 }
 
+// NewCmdRename creates a new command to rename a repository.
 func NewCmdRename(f *cmdutil.Factory, runf func(*RenameOptions) error) *cobra.Command {
 	opts := &RenameOptions{
 		IO:         f.IOStreams,

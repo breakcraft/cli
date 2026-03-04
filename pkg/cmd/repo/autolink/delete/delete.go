@@ -24,10 +24,12 @@ type deleteOptions struct {
 	Prompter  prompter.Prompter
 }
 
+// AutolinkDeleteClient defines the interface for deleting autolinks.
 type AutolinkDeleteClient interface {
 	Delete(repo ghrepo.Interface, id string) error
 }
 
+// NewCmdDelete creates a new command to delete repository autolinks.
 func NewCmdDelete(f *cmdutil.Factory, runF func(*deleteOptions) error) *cobra.Command {
 	opts := &deleteOptions{
 		Browser:  f.Browser,

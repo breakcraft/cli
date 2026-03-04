@@ -25,10 +25,12 @@ type listOptions struct {
 	WebMode  bool
 }
 
+// AutolinkListClient defines the interface for listing autolinks.
 type AutolinkListClient interface {
 	List(repo ghrepo.Interface) ([]shared.Autolink, error)
 }
 
+// NewCmdList creates a new command to list repository autolinks.
 func NewCmdList(f *cmdutil.Factory, runF func(*listOptions) error) *cobra.Command {
 	opts := &listOptions{
 		Browser: f.Browser,

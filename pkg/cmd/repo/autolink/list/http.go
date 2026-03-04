@@ -11,10 +11,12 @@ import (
 	"github.com/cli/cli/v2/pkg/cmd/repo/autolink/shared"
 )
 
+// AutolinkLister is an HTTP client for listing autolinks.
 type AutolinkLister struct {
 	HTTPClient *http.Client
 }
 
+// List retrieves all autolinks for the given repository.
 func (a *AutolinkLister) List(repo ghrepo.Interface) ([]shared.Autolink, error) {
 	path := fmt.Sprintf("repos/%s/%s/autolinks", repo.RepoOwner(), repo.RepoName())
 	url := ghinstance.RESTPrefix(repo.RepoHost()) + path

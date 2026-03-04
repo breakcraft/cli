@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdDeployKey creates a new command for managing repository deploy keys.
 func NewCmdDeployKey(f *cmdutil.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy-key <command>",

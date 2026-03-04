@@ -19,6 +19,7 @@ type iprompter interface {
 	ConfirmDeletion(string) error
 }
 
+// DeleteOptions holds the options for the delete command.
 type DeleteOptions struct {
 	HttpClient func() (*http.Client, error)
 	BaseRepo   func() (ghrepo.Interface, error)
@@ -28,6 +29,7 @@ type DeleteOptions struct {
 	Confirmed  bool
 }
 
+// NewCmdDelete creates a new command to delete a repository.
 func NewCmdDelete(f *cmdutil.Factory, runF func(*DeleteOptions) error) *cobra.Command {
 	opts := &DeleteOptions{
 		IO:         f.IOStreams,

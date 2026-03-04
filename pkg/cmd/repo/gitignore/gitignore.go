@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdGitIgnore creates a new command for managing gitignore templates.
 func NewCmdGitIgnore(f *cmdutil.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "gitignore <command>",

@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// AddOptions holds the options for the deploy key add command.
 type AddOptions struct {
 	IO         *iostreams.IOStreams
 	HTTPClient func() (*http.Client, error)
@@ -23,6 +24,7 @@ type AddOptions struct {
 	AllowWrite bool
 }
 
+// NewCmdAdd creates a new command to add a deploy key to a repository.
 func NewCmdAdd(f *cmdutil.Factory, runF func(*AddOptions) error) *cobra.Command {
 	opts := &AddOptions{
 		HTTPClient: f.HttpClient,

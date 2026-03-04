@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ViewOptions holds the options for the gitignore view command.
 type ViewOptions struct {
 	IO         *iostreams.IOStreams
 	HTTPClient func() (*http.Client, error)
@@ -21,6 +22,7 @@ type ViewOptions struct {
 	Template   string
 }
 
+// NewCmdView creates a new command to view a gitignore template.
 func NewCmdView(f *cmdutil.Factory, runF func(*ViewOptions) error) *cobra.Command {
 	opts := &ViewOptions{
 		IO:         f.IOStreams,

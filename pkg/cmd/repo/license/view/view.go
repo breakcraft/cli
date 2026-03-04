@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ViewOptions holds the options for the license view command.
 type ViewOptions struct {
 	IO         *iostreams.IOStreams
 	HTTPClient func() (*http.Client, error)
@@ -25,6 +26,7 @@ type ViewOptions struct {
 	Browser    browser.Browser
 }
 
+// NewCmdView creates a new command to view a license template.
 func NewCmdView(f *cmdutil.Factory, runF func(*ViewOptions) error) *cobra.Command {
 	opts := &ViewOptions{
 		IO:         f.IOStreams,

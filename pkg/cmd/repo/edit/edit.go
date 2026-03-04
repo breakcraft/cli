@@ -49,6 +49,7 @@ const (
 	optionWikis             = "Wikis"
 )
 
+// EditOptions holds the options for the edit command.
 type EditOptions struct {
 	HTTPClient                         *http.Client
 	Repository                         ghrepo.Interface
@@ -65,6 +66,7 @@ type EditOptions struct {
 	topicsCache []string
 }
 
+// EditRepositoryInput contains the fields that can be edited on a repository.
 type EditRepositoryInput struct {
 	enableAdvancedSecurity             *bool
 	enableSecretScanning               *bool
@@ -89,6 +91,7 @@ type EditRepositoryInput struct {
 	Visibility          *string                   `json:"visibility,omitempty"`
 }
 
+// NewCmdEdit creates a new command to edit repository settings.
 func NewCmdEdit(f *cmdutil.Factory, runF func(options *EditOptions) error) *cobra.Command {
 	opts := &EditOptions{
 		IO:       f.IOStreams,
@@ -603,12 +606,14 @@ func hasSecurityEdits(edits EditRepositoryInput) bool {
 	return edits.enableAdvancedSecurity != nil || edits.enableSecretScanning != nil || edits.enableSecretScanningPushProtection != nil
 }
 
+// SecurityAndAnalysisInput holds settings for repository security and analysis features.
 type SecurityAndAnalysisInput struct {
 	EnableAdvancedSecurity             *SecurityAndAnalysisStatus `json:"advanced_security,omitempty"`
 	EnableSecretScanning               *SecurityAndAnalysisStatus `json:"secret_scanning,omitempty"`
 	EnableSecretScanningPushProtection *SecurityAndAnalysisStatus `json:"secret_scanning_push_protection,omitempty"`
 }
 
+// SecurityAndAnalysisStatus holds the status of a single security and analysis feature.
 type SecurityAndAnalysisStatus struct {
 	Status *string `json:"status,omitempty"`
 }

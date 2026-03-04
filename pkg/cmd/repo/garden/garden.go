@@ -22,6 +22,7 @@ import (
 	"golang.org/x/term"
 )
 
+// Geometry represents the dimensions of the garden grid.
 type Geometry struct {
 	Width      int
 	Height     int
@@ -29,6 +30,7 @@ type Geometry struct {
 	Repository ghrepo.Interface
 }
 
+// Player represents the user's position and trail in the garden.
 type Player struct {
 	X                   int
 	Y                   int
@@ -37,6 +39,7 @@ type Player struct {
 	ShoeMoistureContent int
 }
 
+// Commit represents a git commit with its SHA and associated garden content.
 type Commit struct {
 	Email  string
 	Handle string
@@ -44,19 +47,26 @@ type Commit struct {
 	Char   string
 }
 
+// Cell represents a single cell in the garden grid.
 type Cell struct {
 	Char       string
 	StatusLine string
 }
 
 const (
+	// DirUp is the upward movement direction.
 	DirUp Direction = iota
+	// DirDown is the downward movement direction.
 	DirDown
+	// DirLeft is the leftward movement direction.
 	DirLeft
+	// DirRight is the rightward movement direction.
 	DirRight
+	// Quit signals the player wants to exit the garden.
 	Quit
 )
 
+// Direction represents a movement direction or quit action in the garden.
 type Direction = int
 
 func (p *Player) move(direction Direction) bool {
@@ -86,6 +96,7 @@ func (p *Player) move(direction Direction) bool {
 	return true
 }
 
+// GardenOptions holds the options for the garden command.
 type GardenOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -95,6 +106,7 @@ type GardenOptions struct {
 	RepoArg string
 }
 
+// NewCmdGarden creates a new command to explore a contribution garden.
 func NewCmdGarden(f *cmdutil.Factory, runF func(*GardenOptions) error) *cobra.Command {
 	opts := GardenOptions{
 		IO:         f.IOStreams,
@@ -503,6 +515,7 @@ func clear(io *iostreams.IOStreams) {
 	_ = cmd.Run()
 }
 
+// RGB returns the given string wrapped in ANSI escape codes for the specified RGB color.
 func RGB(r, g, b int, x string) string {
 	return fmt.Sprintf("\033[38;2;%d;%d;%dm%s\033[0m", r, g, b, x)
 }

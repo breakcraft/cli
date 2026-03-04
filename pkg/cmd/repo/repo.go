@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdRepo creates a new command for managing repositories.
 func NewCmdRepo(f *cmdutil.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "repo <command>",

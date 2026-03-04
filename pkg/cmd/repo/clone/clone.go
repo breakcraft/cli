@@ -18,6 +18,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CloneOptions holds the options for the clone command.
 type CloneOptions struct {
 	HttpClient func() (*http.Client, error)
 	GitClient  *git.Client
@@ -30,6 +31,7 @@ type CloneOptions struct {
 	NoUpstream   bool
 }
 
+// NewCmdClone creates a new command to clone a repository.
 func NewCmdClone(f *cmdutil.Factory, runF func(*CloneOptions) error) *cobra.Command {
 	opts := &CloneOptions{
 		IO:         f.IOStreams,

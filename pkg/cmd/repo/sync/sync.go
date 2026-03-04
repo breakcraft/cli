@@ -21,6 +21,7 @@ const (
 	branchDoesNotExistErrorMessage = "Reference does not exist"
 )
 
+// SyncOptions holds the options for the sync command.
 type SyncOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -33,6 +34,7 @@ type SyncOptions struct {
 	Force      bool
 }
 
+// NewCmdSync creates a new command to sync a repository branch.
 func NewCmdSync(f *cmdutil.Factory, runF func(*SyncOptions) error) *cobra.Command {
 	opts := SyncOptions{
 		HttpClient: f.HttpClient,

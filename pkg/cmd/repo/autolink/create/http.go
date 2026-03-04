@@ -13,16 +13,19 @@ import (
 	"github.com/cli/cli/v2/pkg/cmd/repo/autolink/shared"
 )
 
+// AutolinkCreator is an HTTP client for creating autolinks.
 type AutolinkCreator struct {
 	HTTPClient *http.Client
 }
 
+// AutolinkCreateRequest contains the parameters for creating an autolink.
 type AutolinkCreateRequest struct {
 	IsAlphanumeric bool   `json:"is_alphanumeric"`
 	KeyPrefix      string `json:"key_prefix"`
 	URLTemplate    string `json:"url_template"`
 }
 
+// Create sends a request to create an autolink for the given repository.
 func (a *AutolinkCreator) Create(repo ghrepo.Interface, request AutolinkCreateRequest) (*shared.Autolink, error) {
 	path := fmt.Sprintf("repos/%s/%s/autolinks", repo.RepoOwner(), repo.RepoName())
 	url := ghinstance.RESTPrefix(repo.RepoHost()) + path

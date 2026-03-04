@@ -38,6 +38,7 @@ type iprompter interface {
 	Select(string, string, []string) (int, error)
 }
 
+// SetDefaultOptions holds the options for the set-default command.
 type SetDefaultOptions struct {
 	IO         *iostreams.IOStreams
 	Remotes    func() (context.Remotes, error)
@@ -50,6 +51,7 @@ type SetDefaultOptions struct {
 	UnsetMode bool
 }
 
+// NewCmdSetDefault creates a new command to set the default repository.
 func NewCmdSetDefault(f *cmdutil.Factory, runF func(*SetDefaultOptions) error) *cobra.Command {
 	opts := &SetDefaultOptions{
 		IO:         f.IOStreams,

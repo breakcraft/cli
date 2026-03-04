@@ -13,12 +13,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ListOptions holds the options for the license list command.
 type ListOptions struct {
 	IO         *iostreams.IOStreams
 	HTTPClient func() (*http.Client, error)
 	Config     func() (gh.Config, error)
 }
 
+// NewCmdList creates a new command to list available license templates.
 func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Command {
 	opts := &ListOptions{
 		IO:         f.IOStreams,

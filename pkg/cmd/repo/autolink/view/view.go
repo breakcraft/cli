@@ -21,10 +21,12 @@ type viewOptions struct {
 	ID string
 }
 
+// AutolinkViewClient defines the interface for viewing autolinks.
 type AutolinkViewClient interface {
 	View(repo ghrepo.Interface, id string) (*shared.Autolink, error)
 }
 
+// NewCmdView creates a new command to view a repository autolink.
 func NewCmdView(f *cmdutil.Factory, runF func(*viewOptions) error) *cobra.Command {
 	opts := &viewOptions{
 		Browser: f.Browser,

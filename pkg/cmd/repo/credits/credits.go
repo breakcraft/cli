@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// CreditsOptions holds the options for the credits command.
 type CreditsOptions struct {
 	HttpClient func() (*http.Client, error)
 	BaseRepo   func() (ghrepo.Interface, error)
@@ -30,6 +31,7 @@ type CreditsOptions struct {
 	Static     bool
 }
 
+// NewCmdCredits creates a new command to view repository credits.
 func NewCmdCredits(f *cmdutil.Factory, runF func(*CreditsOptions) error) *cobra.Command {
 	opts := &CreditsOptions{
 		HttpClient: f.HttpClient,
@@ -68,6 +70,7 @@ func NewCmdCredits(f *cmdutil.Factory, runF func(*CreditsOptions) error) *cobra.
 	return cmd
 }
 
+// NewCmdRepoCredits creates a new command to view repository contributor credits.
 func NewCmdRepoCredits(f *cmdutil.Factory, runF func(*CreditsOptions) error) *cobra.Command {
 	opts := &CreditsOptions{
 		HttpClient: f.HttpClient,

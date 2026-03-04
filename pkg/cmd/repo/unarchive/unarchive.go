@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// UnarchiveOptions holds the options for the unarchive command.
 type UnarchiveOptions struct {
 	HttpClient func() (*http.Client, error)
 	Config     func() (gh.Config, error)
@@ -25,6 +26,7 @@ type UnarchiveOptions struct {
 	Prompter   prompter.Prompter
 }
 
+// NewCmdUnarchive creates a new command to unarchive a repository.
 func NewCmdUnarchive(f *cmdutil.Factory, runF func(*UnarchiveOptions) error) *cobra.Command {
 	opts := &UnarchiveOptions{
 		IO:         f.IOStreams,

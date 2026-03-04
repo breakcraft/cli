@@ -24,10 +24,12 @@ type createOptions struct {
 	Numeric     bool
 }
 
+// AutolinkCreateClient defines the interface for creating autolinks.
 type AutolinkCreateClient interface {
 	Create(repo ghrepo.Interface, request AutolinkCreateRequest) (*shared.Autolink, error)
 }
 
+// NewCmdCreate creates a new command to create repository autolinks.
 func NewCmdCreate(f *cmdutil.Factory, runF func(*createOptions) error) *cobra.Command {
 	opts := &createOptions{
 		Browser: f.Browser,

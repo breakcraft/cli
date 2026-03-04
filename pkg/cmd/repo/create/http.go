@@ -248,6 +248,7 @@ type ownerResponse struct {
 	Type   string `json:"type"`
 }
 
+// IsOrganization reports whether the owner is an organization.
 func (r *ownerResponse) IsOrganization() bool {
 	return r.Type == "Organization"
 }

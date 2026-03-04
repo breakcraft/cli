@@ -14,14 +14,17 @@ import (
 	"golang.org/x/text/transform"
 )
 
+// NotFoundError is returned when a repository or its readme is not found.
 var NotFoundError = errors.New("not found")
 
+// RepoReadme holds the content and filename of a repository README.
 type RepoReadme struct {
 	Filename string
 	Content  string
 	BaseURL  string
 }
 
+// RepositoryReadme fetches the README for a repository on a given branch.
 func RepositoryReadme(client *http.Client, repo ghrepo.Interface, branch string) (*RepoReadme, error) {
 	apiClient := api.NewClientFromHTTP(client)
 	var response struct {

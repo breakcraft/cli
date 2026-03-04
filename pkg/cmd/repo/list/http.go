@@ -11,6 +11,7 @@ import (
 	"github.com/cli/cli/v2/pkg/search"
 )
 
+// RepositoryList holds a paginated list of repositories.
 type RepositoryList struct {
 	Owner        string
 	Repositories []api.Repository
@@ -18,6 +19,7 @@ type RepositoryList struct {
 	FromSearch   bool
 }
 
+// FilterOptions specifies filters for listing repositories.
 type FilterOptions struct {
 	Visibility  string // private, public, internal
 	Fork        bool

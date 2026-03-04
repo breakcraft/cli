@@ -35,6 +35,7 @@ type iprompter interface {
 	Confirm(string, bool) (bool, error)
 }
 
+// CreateOptions holds the options for the create command.
 type CreateOptions struct {
 	HttpClient func() (*http.Client, error)
 	GitClient  *git.Client
@@ -65,6 +66,7 @@ type CreateOptions struct {
 	AddReadme          bool
 }
 
+// NewCmdCreate creates a new command to create a repository.
 func NewCmdCreate(f *cmdutil.Factory, runF func(*CreateOptions) error) *cobra.Command {
 	opts := &CreateOptions{
 		IO:         f.IOStreams,

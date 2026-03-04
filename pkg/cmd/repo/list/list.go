@@ -18,6 +18,7 @@ import (
 	"github.com/cli/cli/v2/pkg/iostreams"
 )
 
+// ListOptions holds the options for the repo list command.
 type ListOptions struct {
 	HttpClient func() (*http.Client, error)
 	Config     func() (gh.Config, error)
@@ -39,6 +40,7 @@ type ListOptions struct {
 	Now func() time.Time
 }
 
+// NewCmdList creates a new command to list repositories.
 func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Command {
 	opts := ListOptions{
 		IO:         f.IOStreams,

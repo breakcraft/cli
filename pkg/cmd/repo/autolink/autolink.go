@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdAutolink creates a new command for managing repository autolinks.
 func NewCmdAutolink(f *cmdutil.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "autolink <command>",

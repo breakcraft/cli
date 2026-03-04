@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ViewOptions holds the options for the view command.
 type ViewOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -33,6 +34,7 @@ type ViewOptions struct {
 	Branch  string
 }
 
+// NewCmdView creates a new command to view a repository.
 func NewCmdView(f *cmdutil.Factory, runF func(*ViewOptions) error) *cobra.Command {
 	opts := ViewOptions{
 		IO:         f.IOStreams,

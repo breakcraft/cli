@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// DeleteOptions holds the options for the deploy key delete command.
 type DeleteOptions struct {
 	IO         *iostreams.IOStreams
 	HTTPClient func() (*http.Client, error)
@@ -18,6 +19,7 @@ type DeleteOptions struct {
 	KeyID string
 }
 
+// NewCmdDelete creates a new command to delete a deploy key from a repository.
 func NewCmdDelete(f *cmdutil.Factory, runF func(*DeleteOptions) error) *cobra.Command {
 	opts := &DeleteOptions{
 		HTTPClient: f.HttpClient,

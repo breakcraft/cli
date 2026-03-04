@@ -29,6 +29,7 @@ type iprompter interface {
 	Confirm(string, bool) (bool, error)
 }
 
+// ForkOptions holds the options for the fork command.
 type ForkOptions struct {
 	HttpClient func() (*http.Client, error)
 	GitClient  *git.Client
@@ -61,6 +62,7 @@ type errWithExitCode interface {
 // TODO output over STDOUT not STDERR
 // TODO remote-name has no effect on its own; error that or change behavior
 
+// NewCmdFork creates a new command to fork a repository.
 func NewCmdFork(f *cmdutil.Factory, runF func(*ForkOptions) error) *cobra.Command {
 	opts := &ForkOptions{
 		IO:         f.IOStreams,

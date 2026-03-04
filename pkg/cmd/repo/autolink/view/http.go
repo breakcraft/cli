@@ -11,10 +11,12 @@ import (
 	"github.com/cli/cli/v2/pkg/cmd/repo/autolink/shared"
 )
 
+// AutolinkViewer is an HTTP client for viewing autolinks.
 type AutolinkViewer struct {
 	HTTPClient *http.Client
 }
 
+// View retrieves a single autolink by ID from the given repository.
 func (a *AutolinkViewer) View(repo ghrepo.Interface, id string) (*shared.Autolink, error) {
 	path := fmt.Sprintf("repos/%s/%s/autolinks/%s", repo.RepoOwner(), repo.RepoName(), id)
 	url := ghinstance.RESTPrefix(repo.RepoHost()) + path

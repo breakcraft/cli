@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdLicense creates a new command for managing license templates.
 func NewCmdLicense(f *cmdutil.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "license <command>",
