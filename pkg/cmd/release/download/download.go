@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// DownloadOptions holds the configuration for the release download command.
 type DownloadOptions struct {
 	HttpClient        func() (*http.Client, error)
 	IO                *iostreams.IOStreams
@@ -40,6 +41,7 @@ type DownloadOptions struct {
 	ArchiveType string
 }
 
+// NewCmdDownload creates a new cobra command for downloading release assets.
 func NewCmdDownload(f *cmdutil.Factory, runF func(*DownloadOptions) error) *cobra.Command {
 	opts := &DownloadOptions{
 		IO:         f.IOStreams,

@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// VerifyOptions holds the options for the release verify command.
 type VerifyOptions struct {
 	TagName     string
 	BaseRepo    ghrepo.Interface
@@ -29,6 +30,7 @@ type VerifyOptions struct {
 	TrustedRoot string
 }
 
+// VerifyConfig holds the runtime dependencies for the release verify command.
 type VerifyConfig struct {
 	HttpClient  *http.Client
 	IO          *iostreams.IOStreams
@@ -37,6 +39,7 @@ type VerifyConfig struct {
 	AttVerifier shared.Verifier
 }
 
+// NewCmdVerify creates a new cobra command for verifying a release attestation.
 func NewCmdVerify(f *cmdutil.Factory, runF func(config *VerifyConfig) error) *cobra.Command {
 	opts := &VerifyOptions{}
 

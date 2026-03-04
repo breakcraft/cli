@@ -27,6 +27,7 @@ type iprompter interface {
 	Confirm(string, bool) (bool, error)
 }
 
+// CreateOptions holds the configuration for the release create command.
 type CreateOptions struct {
 	IO         *iostreams.IOStreams
 	Config     func() (gh.Config, error)
@@ -63,6 +64,7 @@ type CreateOptions struct {
 	FailOnNoCommits    bool
 }
 
+// NewCmdCreate creates a new cobra command for creating a GitHub release.
 func NewCmdCreate(f *cmdutil.Factory, runF func(*CreateOptions) error) *cobra.Command {
 	opts := &CreateOptions{
 		IO:         f.IOStreams,

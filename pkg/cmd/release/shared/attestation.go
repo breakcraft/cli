@@ -17,11 +17,13 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
+// Verifier defines the interface for verifying release attestations.
 type Verifier interface {
 	// VerifyAttestation verifies the attestation for a given artifact
 	VerifyAttestation(art *artifact.DigestedArtifact, att *api.Attestation) (*verification.AttestationProcessingResult, error)
 }
 
+// AttestationVerifier verifies release attestations using sigstore.
 type AttestationVerifier struct {
 	AttClient   api.Client
 	HttpClient  *http.Client
@@ -29,6 +31,7 @@ type AttestationVerifier struct {
 	TrustedRoot string
 }
 
+// VerifyAttestation verifies a single attestation against the given artifact.
 func (v *AttestationVerifier) VerifyAttestation(art *artifact.DigestedArtifact, att *api.Attestation) (*verification.AttestationProcessingResult, error) {
 	td, err := v.AttClient.GetTrustDomain()
 	if err != nil {
@@ -55,6 +58,7 @@ func (v *AttestationVerifier) VerifyAttestation(art *artifact.DigestedArtifact, 
 	return sigstoreVerified[0], nil
 }
 
+// FilterAttestationsByTag returns only attestations whose predicate tag matches tagName.
 func FilterAttestationsByTag(attestations []*api.Attestation, tagName string) ([]*api.Attestation, error) {
 	var filtered []*api.Attestation
 	for _, att := range attestations {
@@ -73,6 +77,7 @@ func FilterAttestationsByTag(attestations []*api.Attestation, tagName string) ([
 	return filtered, nil
 }
 
+// FilterAttestationsByFileDigest returns only attestations whose subject digest matches fileDigest.
 func FilterAttestationsByFileDigest(attestations []*api.Attestation, fileDigest string) ([]*api.Attestation, error) {
 	var filtered []*api.Attestation
 	for _, att := range attestations {
@@ -113,14 +118,17 @@ func buildVerificationPolicy(a artifact.DigestedArtifact, trustDomain string) ve
 	return verify.NewPolicy(artifactDigestPolicyOption, verify.WithCertificateIdentity(certId))
 }
 
+// MockVerifier is a test double that implements the Verifier interface.
 type MockVerifier struct {
 	mockResult *verification.AttestationProcessingResult
 }
 
+// NewMockVerifier creates a MockVerifier that returns the given result.
 func NewMockVerifier(mockResult *verification.AttestationProcessingResult) *MockVerifier {
 	return &MockVerifier{mockResult: mockResult}
 }
 
+// VerifyAttestation returns the preconfigured mock result.
 func (v *MockVerifier) VerifyAttestation(art *artifact.DigestedArtifact, att *api.Attestation) (*verification.AttestationProcessingResult, error) {
 	return &verification.AttestationProcessingResult{
 		Attestation: &api.Attestation{

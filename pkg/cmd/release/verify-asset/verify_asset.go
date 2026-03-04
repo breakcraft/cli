@@ -19,6 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// VerifyAssetOptions holds the options for the release verify-asset command.
 type VerifyAssetOptions struct {
 	TagName       string
 	BaseRepo      ghrepo.Interface
@@ -27,6 +28,7 @@ type VerifyAssetOptions struct {
 	TrustedRoot   string
 }
 
+// VerifyAssetConfig holds the runtime dependencies for the verify-asset command.
 type VerifyAssetConfig struct {
 	HttpClient  *http.Client
 	IO          *iostreams.IOStreams
@@ -35,6 +37,7 @@ type VerifyAssetConfig struct {
 	AttVerifier shared.Verifier
 }
 
+// NewCmdVerifyAsset creates a new cobra command for verifying a release asset attestation.
 func NewCmdVerifyAsset(f *cmdutil.Factory, runF func(*VerifyAssetConfig) error) *cobra.Command {
 	opts := &VerifyAssetOptions{}
 

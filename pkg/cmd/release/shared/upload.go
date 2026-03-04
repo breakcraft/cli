@@ -25,6 +25,7 @@ type httpDoer interface {
 
 type errNetwork struct{ error }
 
+// AssetForUpload describes a file to be uploaded as a release asset.
 type AssetForUpload struct {
 	Name  string
 	Label string
@@ -36,6 +37,7 @@ type AssetForUpload struct {
 	ExistingURL string
 }
 
+// AssetsFromArgs parses command-line arguments into a list of assets for upload.
 func AssetsFromArgs(args []string) (assets []*AssetForUpload, err error) {
 	labeledArgs, unlabeledArgs := cmdutil.Partition(args, func(arg string) bool {
 		return strings.Contains(arg, "#")
@@ -111,6 +113,7 @@ func fileExt(fn string) string {
 	return path.Ext(fn)
 }
 
+// ConcurrentUpload uploads release assets in parallel using the specified number of workers.
 func ConcurrentUpload(httpClient httpDoer, uploadURL string, numWorkers int, assets []*AssetForUpload) error {
 	if numWorkers == 0 {
 		return errors.New("the number of concurrent workers needs to be greater than 0")

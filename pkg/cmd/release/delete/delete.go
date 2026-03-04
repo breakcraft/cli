@@ -19,6 +19,7 @@ type iprompter interface {
 	Confirm(string, bool) (bool, error)
 }
 
+// DeleteOptions holds the configuration for the release delete command.
 type DeleteOptions struct {
 	HttpClient   func() (*http.Client, error)
 	GitClient    *git.Client
@@ -32,6 +33,7 @@ type DeleteOptions struct {
 	CleanupTag  bool
 }
 
+// NewCmdDelete creates a new cobra command for deleting a GitHub release.
 func NewCmdDelete(f *cmdutil.Factory, runF func(*DeleteOptions) error) *cobra.Command {
 	opts := &DeleteOptions{
 		IO:         f.IOStreams,

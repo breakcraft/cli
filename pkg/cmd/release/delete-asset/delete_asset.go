@@ -17,6 +17,7 @@ type iprompter interface {
 	Confirm(string, bool) (bool, error)
 }
 
+// DeleteAssetOptions holds the configuration for the release delete-asset command.
 type DeleteAssetOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -28,6 +29,7 @@ type DeleteAssetOptions struct {
 	AssetName   string
 }
 
+// NewCmdDeleteAsset creates a new cobra command for deleting a release asset.
 func NewCmdDeleteAsset(f *cmdutil.Factory, runF func(*DeleteAssetOptions) error) *cobra.Command {
 	opts := &DeleteAssetOptions{
 		IO:         f.IOStreams,

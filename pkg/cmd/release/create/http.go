@@ -36,6 +36,7 @@ type errMissingRequiredWorkflowScope struct {
 	Hostname string
 }
 
+// Error returns the error message for a missing workflow scope.
 func (e errMissingRequiredWorkflowScope) Error() string {
 	return "workflow scope may be required"
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// UploadOptions holds the configuration for the release upload command.
 type UploadOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -29,6 +30,7 @@ type UploadOptions struct {
 	OverwriteExisting bool
 }
 
+// NewCmdUpload creates a new cobra command for uploading assets to a release.
 func NewCmdUpload(f *cmdutil.Factory, runF func(*UploadOptions) error) *cobra.Command {
 	opts := &UploadOptions{
 		IO:         f.IOStreams,

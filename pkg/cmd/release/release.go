@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdRelease creates the top-level cobra command for managing GitHub releases.
 func NewCmdRelease(f *cmdutil.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "release <command>",

@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// EditOptions holds the configuration for the release edit command.
 type EditOptions struct {
 	IO         *iostreams.IOStreams
 	HttpClient func() (*http.Client, error)
@@ -29,6 +30,7 @@ type EditOptions struct {
 	VerifyTag          bool
 }
 
+// NewCmdEdit creates a new cobra command for editing an existing GitHub release.
 func NewCmdEdit(f *cmdutil.Factory, runF func(*EditOptions) error) *cobra.Command {
 	opts := &EditOptions{
 		IO:         f.IOStreams,

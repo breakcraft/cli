@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// ReleaseFields lists the exportable field names for a Release.
 var ReleaseFields = []string{
 	"apiUrl",
 	"author",
@@ -41,6 +42,7 @@ var ReleaseFields = []string{
 	"zipballUrl",
 }
 
+// Release represents a GitHub release with its metadata and assets.
 type Release struct {
 	DatabaseID   int64      `json:"id"`
 	ID           string     `json:"node_id"`
@@ -68,6 +70,7 @@ type Release struct {
 	}
 }
 
+// ReleaseAsset represents a single asset attached to a GitHub release.
 type ReleaseAsset struct {
 	ID     string `json:"node_id"`
 	Name   string
@@ -84,6 +87,7 @@ type ReleaseAsset struct {
 	BrowserDownloadURL string    `json:"browser_download_url"`
 }
 
+// ExportData returns the release data for the specified fields as a map.
 func (rel *Release) ExportData(fields []string) map[string]interface{} {
 	v := reflect.ValueOf(rel).Elem()
 	fieldByName := func(v reflect.Value, field string) reflect.Value {
@@ -128,6 +132,7 @@ func (rel *Release) ExportData(fields []string) map[string]interface{} {
 	return data
 }
 
+// ErrReleaseNotFound is returned when the requested release does not exist.
 var ErrReleaseNotFound = errors.New("release not found")
 
 type fetchResult struct {
@@ -135,6 +140,7 @@ type fetchResult struct {
 	error   error
 }
 
+// FetchRefSHA retrieves the commit SHA for the given tag from the repository.
 func FetchRefSHA(ctx context.Context, httpClient *http.Client, repo ghrepo.Interface, tagName string) (string, error) {
 	path := fmt.Sprintf("repos/%s/%s/git/ref/tags/%s", repo.RepoOwner(), repo.RepoName(), tagName)
 	req, err := http.NewRequestWithContext(ctx, "GET", ghinstance.RESTPrefix(repo.RepoHost())+path, nil)
@@ -265,6 +271,7 @@ func fetchReleasePath(ctx context.Context, httpClient *http.Client, host string,
 	return &release, nil
 }
 
+// StubFetchRelease registers mock HTTP handlers for fetching a release in tests.
 func StubFetchRelease(t *testing.T, reg *httpmock.Registry, owner, repoName, tagName, responseBody string) {
 	path := "repos/OWNER/REPO/releases/tags/v1.2.3"
 	if tagName == "" {
@@ -286,6 +293,7 @@ func StubFetchRelease(t *testing.T, reg *httpmock.Registry, owner, repoName, tag
 	}
 }
 
+// StubFetchRefSHA registers a mock HTTP handler for fetching a ref SHA in tests.
 func StubFetchRefSHA(t *testing.T, reg *httpmock.Registry, owner, repoName, tagName, sha string) {
 	path := fmt.Sprintf("repos/%s/%s/git/ref/tags/%s", owner, repoName, tagName)
 	reg.Register(

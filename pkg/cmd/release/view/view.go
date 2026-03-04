@@ -23,6 +23,7 @@ type browser interface {
 	Browse(string) error
 }
 
+// ViewOptions holds the configuration for the release view command.
 type ViewOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -34,6 +35,7 @@ type ViewOptions struct {
 	WebMode bool
 }
 
+// NewCmdView creates a new cobra command for viewing a GitHub release.
 func NewCmdView(f *cmdutil.Factory, runF func(*ViewOptions) error) *cobra.Command {
 	opts := &ViewOptions{
 		IO:         f.IOStreams,

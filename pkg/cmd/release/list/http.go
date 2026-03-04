@@ -23,6 +23,7 @@ var releaseFields = []string{
 	"publishedAt",
 }
 
+// Release represents a GitHub release as returned by the list query.
 type Release struct {
 	Name         string
 	TagName      string
@@ -34,6 +35,7 @@ type Release struct {
 	PublishedAt  time.Time
 }
 
+// ExportData returns the release data for the specified fields as a map.
 func (r *Release) ExportData(fields []string) map[string]interface{} {
 	return cmdutil.StructExportData(r, fields)
 }
