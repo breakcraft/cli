@@ -10,10 +10,12 @@ import (
 	"github.com/cli/cli/v2/internal/ghinstance"
 )
 
+// MissingScopesError indicates that the authentication token is missing required OAuth scopes.
 type MissingScopesError struct {
 	MissingScopes []string
 }
 
+// Error returns a human-readable message listing the missing OAuth scopes.
 func (e MissingScopesError) Error() string {
 	var missing []string
 	for _, s := range e.MissingScopes {

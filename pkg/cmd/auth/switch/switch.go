@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// SwitchOptions holds the configuration and dependencies for the switch command.
 type SwitchOptions struct {
 	IO       *iostreams.IOStreams
 	Config   func() (gh.Config, error)
@@ -21,6 +22,7 @@ type SwitchOptions struct {
 	Username string
 }
 
+// NewCmdSwitch creates the 'auth switch' command for switching between authenticated accounts.
 func NewCmdSwitch(f *cmdutil.Factory, runF func(*SwitchOptions) error) *cobra.Command {
 	opts := SwitchOptions{
 		IO:       f.IOStreams,

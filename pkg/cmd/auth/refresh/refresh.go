@@ -20,6 +20,7 @@ import (
 type token string
 type username string
 
+// RefreshOptions holds the configuration and dependencies for the refresh command.
 type RefreshOptions struct {
 	IO              *iostreams.IOStreams
 	Config          func() (gh.Config, error)
@@ -40,6 +41,7 @@ type RefreshOptions struct {
 	Clipboard       bool
 }
 
+// NewCmdRefresh creates the 'auth refresh' command for refreshing stored authentication credentials.
 func NewCmdRefresh(f *cmdutil.Factory, runF func(*RefreshOptions) error) *cobra.Command {
 	opts := &RefreshOptions{
 		IO:     f.IOStreams,

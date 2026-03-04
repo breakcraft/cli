@@ -18,6 +18,7 @@ type config interface {
 	ActiveUser(string) (string, error)
 }
 
+// CredentialOptions holds the configuration for the git credential helper command.
 type CredentialOptions struct {
 	IO     *iostreams.IOStreams
 	Config func() (config, error)
@@ -25,6 +26,7 @@ type CredentialOptions struct {
 	Operation string
 }
 
+// NewCmdCredential creates the 'auth git-credential' command used as a git credential helper.
 func NewCmdCredential(f *cmdutil.Factory, runF func(*CredentialOptions) error) *cobra.Command {
 	opts := &CredentialOptions{
 		IO: f.IOStreams,

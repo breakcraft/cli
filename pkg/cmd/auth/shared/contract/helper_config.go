@@ -17,6 +17,7 @@ type HelperConfig struct {
 	ConfigureHelper func(t *testing.T, hostname string)
 }
 
+// Test runs the contract tests to verify a HelperConfig implementation conforms to expected behavior.
 func (contract HelperConfig) Test(t *testing.T) {
 	t.Run("when there are no credential helpers, configures gh for repo and gist host", func(t *testing.T) {
 		hc := contract.NewHelperConfig(t)

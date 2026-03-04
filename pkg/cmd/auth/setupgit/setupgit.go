@@ -16,6 +16,7 @@ type gitCredentialsConfigurer interface {
 	ConfigureOurs(hostname string) error
 }
 
+// SetupGitOptions holds the configuration and dependencies for the setup-git command.
 type SetupGitOptions struct {
 	IO                      *iostreams.IOStreams
 	Config                  func() (gh.Config, error)
@@ -24,6 +25,7 @@ type SetupGitOptions struct {
 	CredentialsHelperConfig gitCredentialsConfigurer
 }
 
+// NewCmdSetupGit creates the 'auth setup-git' command for configuring git to use GitHub CLI as a credential helper.
 func NewCmdSetupGit(f *cmdutil.Factory, runF func(*SetupGitOptions) error) *cobra.Command {
 	opts := &SetupGitOptions{
 		IO:     f.IOStreams,

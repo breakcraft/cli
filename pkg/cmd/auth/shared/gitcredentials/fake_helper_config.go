@@ -7,6 +7,7 @@ import (
 	"github.com/cli/cli/v2/internal/ghinstance"
 )
 
+// FakeHelperConfig is a test double for HelperConfig that uses in-memory state.
 type FakeHelperConfig struct {
 	SelfExecutablePath string
 	Helpers            map[string]Helper

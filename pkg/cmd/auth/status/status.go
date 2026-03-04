@@ -53,10 +53,12 @@ var authStatusFields = []string{
 	"hosts",
 }
 
+// ExportData returns the auth status fields as a map suitable for structured output.
 func (a authStatus) ExportData(fields []string) map[string]interface{} {
 	return cmdutil.StructExportData(a, fields)
 }
 
+// String returns a human-readable representation of the auth entry using the given color scheme.
 func (e authEntry) String(cs *iostreams.ColorScheme) string {
 	var sb strings.Builder
 
@@ -114,6 +116,7 @@ func (e authEntry) String(cs *iostreams.ColorScheme) string {
 	return sb.String()
 }
 
+// StatusOptions holds the configuration and dependencies for the status command.
 type StatusOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -125,6 +128,7 @@ type StatusOptions struct {
 	Active    bool
 }
 
+// NewCmdStatus creates the 'auth status' command for displaying authentication status.
 func NewCmdStatus(f *cmdutil.Factory, runF func(*StatusOptions) error) *cobra.Command {
 	opts := &StatusOptions{
 		HttpClient: f.HttpClient,

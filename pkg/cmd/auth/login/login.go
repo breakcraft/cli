@@ -19,6 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// LoginOptions holds the configuration and dependencies for the login command.
 type LoginOptions struct {
 	IO              *iostreams.IOStreams
 	Config          func() (gh.Config, error)
@@ -42,6 +43,7 @@ type LoginOptions struct {
 	Clipboard        bool
 }
 
+// NewCmdLogin creates the 'auth login' command for authenticating with a GitHub host.
 func NewCmdLogin(f *cmdutil.Factory, runF func(*LoginOptions) error) *cobra.Command {
 	opts := &LoginOptions{
 		IO:              f.IOStreams,

@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// TokenOptions holds the configuration and dependencies for the token command.
 type TokenOptions struct {
 	IO     *iostreams.IOStreams
 	Config func() (gh.Config, error)
@@ -20,6 +21,7 @@ type TokenOptions struct {
 	SecureStorage bool
 }
 
+// NewCmdToken creates the 'auth token' command for displaying or managing the authentication token.
 func NewCmdToken(f *cmdutil.Factory, runF func(*TokenOptions) error) *cobra.Command {
 	opts := &TokenOptions{
 		IO:     f.IOStreams,

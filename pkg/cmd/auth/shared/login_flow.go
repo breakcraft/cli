@@ -26,6 +26,7 @@ type iconfig interface {
 	UsersForHost(string) []string
 }
 
+// LoginOptions holds the shared configuration and dependencies for the authentication login flow.
 type LoginOptions struct {
 	IO               *iostreams.IOStreams
 	Config           iconfig
@@ -46,6 +47,7 @@ type LoginOptions struct {
 	sshContext ssh.Context
 }
 
+// Login performs the authentication flow using either interactive OAuth or a provided token.
 func Login(opts *LoginOptions) error {
 	cfg := opts.Config
 	hostname := opts.Hostname
@@ -249,6 +251,7 @@ func sshKeyUpload(httpClient *http.Client, hostname, keyFile string, title strin
 	return add.SSHKeyUpload(httpClient, hostname, f, title)
 }
 
+// GetCurrentLogin queries the GitHub API to retrieve the username of the currently authenticated user.
 func GetCurrentLogin(httpClient httpClient, hostname, authToken string) (string, error) {
 	query := `query UserCurrent{viewer{login}}`
 	reqBody, err := json.Marshal(map[string]interface{}{"query": query})

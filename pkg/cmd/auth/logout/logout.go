@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// LogoutOptions holds the configuration and dependencies for the logout command.
 type LogoutOptions struct {
 	IO       *iostreams.IOStreams
 	Config   func() (gh.Config, error)
@@ -21,6 +22,7 @@ type LogoutOptions struct {
 	Username string
 }
 
+// NewCmdLogout creates the 'auth logout' command for removing authentication for a GitHub host.
 func NewCmdLogout(f *cmdutil.Factory, runF func(*LogoutOptions) error) *cobra.Command {
 	opts := &LogoutOptions{
 		IO:       f.IOStreams,

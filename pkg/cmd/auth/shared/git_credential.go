@@ -7,11 +7,13 @@ import (
 	"github.com/cli/cli/v2/pkg/cmd/auth/shared/gitcredentials"
 )
 
+// HelperConfig defines an interface for configuring and querying git credential helpers.
 type HelperConfig interface {
 	ConfigureOurs(hostname string) error
 	ConfiguredHelper(hostname string) (gitcredentials.Helper, error)
 }
 
+// GitCredentialFlow manages the interactive flow for configuring git credential helpers during authentication.
 type GitCredentialFlow struct {
 	Prompter Prompt
 
@@ -23,6 +25,7 @@ type GitCredentialFlow struct {
 	scopes      []string
 }
 
+// Prompt asks the user whether to configure git credentials for the given hostname.
 func (flow *GitCredentialFlow) Prompt(hostname string) error {
 	// First we'll fetch the credential helper that would be used for this host
 	var configuredHelperErr error
@@ -69,14 +72,17 @@ func (flow *GitCredentialFlow) Prompt(hostname string) error {
 	return nil
 }
 
+// Scopes returns the additional OAuth scopes required by the credential flow.
 func (flow *GitCredentialFlow) Scopes() []string {
 	return flow.scopes
 }
 
+// ShouldSetup reports whether the user opted to configure git credentials.
 func (flow *GitCredentialFlow) ShouldSetup() bool {
 	return flow.shouldSetup
 }
 
+// Setup configures git credential storage for the given hostname, username, and token.
 func (flow *GitCredentialFlow) Setup(hostname, username, authToken string) error {
 	// If there is no credential helper configured then we will set ourselves up as
 	// the credential helper for this host.
