@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// EditOptions holds the configuration for the edit command.
 type EditOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -38,6 +39,7 @@ type EditOptions struct {
 	prShared.Editable
 }
 
+// NewCmdEdit creates a new cobra command for editing an issue.
 func NewCmdEdit(f *cmdutil.Factory, runF func(*EditOptions) error) *cobra.Command {
 	opts := &EditOptions{
 		IO:                 f.IOStreams,

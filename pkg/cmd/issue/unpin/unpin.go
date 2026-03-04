@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// UnpinOptions holds the configuration for the unpin command.
 type UnpinOptions struct {
 	HttpClient func() (*http.Client, error)
 	Config     func() (gh.Config, error)
@@ -24,6 +25,7 @@ type UnpinOptions struct {
 	IssueNumber int
 }
 
+// NewCmdUnpin creates a new cobra command for unpinning an issue from a repository.
 func NewCmdUnpin(f *cmdutil.Factory, runF func(*UnpinOptions) error) *cobra.Command {
 	opts := &UnpinOptions{
 		IO:         f.IOStreams,

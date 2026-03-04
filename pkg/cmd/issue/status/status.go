@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// StatusOptions holds the configuration for the status command.
 type StatusOptions struct {
 	HttpClient func() (*http.Client, error)
 	Config     func() (gh.Config, error)
@@ -24,6 +25,7 @@ type StatusOptions struct {
 	Exporter cmdutil.Exporter
 }
 
+// NewCmdStatus creates a new cobra command for showing the status of relevant issues.
 func NewCmdStatus(f *cmdutil.Factory, runF func(*StatusOptions) error) *cobra.Command {
 	opts := &StatusOptions{
 		IO:         f.IOStreams,

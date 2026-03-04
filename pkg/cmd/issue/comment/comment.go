@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdComment creates a new cobra command for commenting on an issue.
 func NewCmdComment(f *cmdutil.Factory, runF func(*prShared.CommentableOptions) error) *cobra.Command {
 	opts := &prShared.CommentableOptions{
 		IO:                        f.IOStreams,

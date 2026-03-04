@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ViewOptions holds the configuration for the view command.
 type ViewOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -40,6 +41,7 @@ type ViewOptions struct {
 	Now func() time.Time
 }
 
+// NewCmdView creates a new cobra command for viewing an issue.
 func NewCmdView(f *cmdutil.Factory, runF func(*ViewOptions) error) *cobra.Command {
 	opts := &ViewOptions{
 		IO:         f.IOStreams,

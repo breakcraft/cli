@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// CreateOptions holds the configuration for the create command.
 type CreateOptions struct {
 	HttpClient       func() (*http.Client, error)
 	Config           func() (gh.Config, error)
@@ -48,6 +49,7 @@ type CreateOptions struct {
 	Template  string
 }
 
+// NewCmdCreate creates a new cobra command for creating an issue.
 func NewCmdCreate(f *cmdutil.Factory, runF func(*CreateOptions) error) *cobra.Command {
 	opts := &CreateOptions{
 		IO:         f.IOStreams,

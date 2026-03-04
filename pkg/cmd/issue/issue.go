@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdIssue creates a new cobra command for managing GitHub issues.
 func NewCmdIssue(f *cmdutil.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "issue <command>",

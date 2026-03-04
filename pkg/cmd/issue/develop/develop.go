@@ -19,6 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// DevelopOptions holds the configuration for the develop command.
 type DevelopOptions struct {
 	HttpClient func() (*http.Client, error)
 	GitClient  *git.Client
@@ -34,6 +35,7 @@ type DevelopOptions struct {
 	List        bool
 }
 
+// NewCmdDevelop creates a new cobra command for managing linked branches for an issue.
 func NewCmdDevelop(f *cmdutil.Factory, runF func(*DevelopOptions) error) *cobra.Command {
 	opts := &DevelopOptions{
 		IO:         f.IOStreams,

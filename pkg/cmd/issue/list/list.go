@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ListOptions holds the configuration for the list command.
 type ListOptions struct {
 	HttpClient func() (*http.Client, error)
 	Config     func() (gh.Config, error)
@@ -44,6 +45,7 @@ type ListOptions struct {
 	Now      func() time.Time
 }
 
+// NewCmdList creates a new cobra command for listing issues in a repository.
 func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Command {
 	opts := &ListOptions{
 		IO:         f.IOStreams,

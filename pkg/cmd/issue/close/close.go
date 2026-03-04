@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// CloseOptions holds the configuration for the close command.
 type CloseOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -30,6 +31,7 @@ type CloseOptions struct {
 	Detector fd.Detector
 }
 
+// NewCmdClose creates a new cobra command for closing an issue.
 func NewCmdClose(f *cmdutil.Factory, runF func(*CloseOptions) error) *cobra.Command {
 	opts := &CloseOptions{
 		IO:         f.IOStreams,
@@ -236,6 +238,7 @@ func apiClose(httpClient *http.Client, repo ghrepo.Interface, issue *api.Issue, 
 	return gql.Mutate(repo.RepoHost(), "IssueClose", &mutation, variables)
 }
 
+// CloseIssueInput represents the GraphQL input for closing an issue.
 type CloseIssueInput struct {
 	IssueID          string `json:"issueId"`
 	StateReason      string `json:"stateReason,omitempty"`

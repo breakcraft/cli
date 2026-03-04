@@ -13,6 +13,7 @@ import (
 	"github.com/cli/cli/v2/pkg/iostreams"
 )
 
+// PrintIssues renders a table of issues to the given IOStreams output.
 func PrintIssues(io *iostreams.IOStreams, now time.Time, prefix string, totalCount int, issues []api.Issue) {
 	cs := io.ColorScheme()
 	isTTY := io.IsStdoutTTY()

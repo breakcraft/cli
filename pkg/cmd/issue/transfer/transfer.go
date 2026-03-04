@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// TransferOptions holds the configuration for the transfer command.
 type TransferOptions struct {
 	HttpClient func() (*http.Client, error)
 	Config     func() (gh.Config, error)
@@ -24,6 +25,7 @@ type TransferOptions struct {
 	DestRepoSelector string
 }
 
+// NewCmdTransfer creates a new cobra command for transferring an issue to another repository.
 func NewCmdTransfer(f *cmdutil.Factory, runF func(*TransferOptions) error) *cobra.Command {
 	opts := TransferOptions{
 		IO:         f.IOStreams,

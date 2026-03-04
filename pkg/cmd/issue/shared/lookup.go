@@ -20,6 +20,7 @@ import (
 
 var issueURLRE = regexp.MustCompile(`^/([^/]+)/([^/]+)/(?:issues|pull)/(\d+)`)
 
+// ParseIssuesFromArgs parses multiple issue numbers or URLs from command-line arguments.
 func ParseIssuesFromArgs(args []string) ([]int, o.Option[ghrepo.Interface], error) {
 	var repo o.Option[ghrepo.Interface]
 	issueNumbers := make([]int, len(args))
@@ -55,6 +56,7 @@ func ParseIssuesFromArgs(args []string) ([]int, o.Option[ghrepo.Interface], erro
 	return issueNumbers, repo, nil
 }
 
+// ParseIssueFromArg parses an issue number or URL from a single command-line argument.
 func ParseIssueFromArg(arg string) (int, o.Option[ghrepo.Interface], error) {
 	issueLocator := tryParseIssueFromURL(arg)
 	if issueLocator, present := issueLocator.Value(); present {
@@ -98,6 +100,7 @@ func tryParseIssueFromURL(maybeURL string) o.Option[issueLocator] {
 	})
 }
 
+// PartialLoadError indicates that some issue fields could not be loaded via GraphQL.
 type PartialLoadError struct {
 	error
 }
@@ -135,6 +138,7 @@ func FindIssuesOrPRs(httpClient *http.Client, repo ghrepo.Interface, issueNumber
 	return issues, nil
 }
 
+// FindIssueOrPR loads a single issue or pull request by number with the specified fields.
 func FindIssueOrPR(httpClient *http.Client, repo ghrepo.Interface, number int, fields []string) (*api.Issue, error) {
 	fieldSet := set.NewStringSet()
 	fieldSet.AddValues(fields)

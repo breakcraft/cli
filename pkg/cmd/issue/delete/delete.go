@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// DeleteOptions holds the configuration for the delete command.
 type DeleteOptions struct {
 	HttpClient func() (*http.Client, error)
 	Config     func() (gh.Config, error)
@@ -29,6 +30,7 @@ type iprompter interface {
 	ConfirmDeletion(string) error
 }
 
+// NewCmdDelete creates a new cobra command for deleting an issue.
 func NewCmdDelete(f *cmdutil.Factory, runF func(*DeleteOptions) error) *cobra.Command {
 	opts := &DeleteOptions{
 		IO:         f.IOStreams,

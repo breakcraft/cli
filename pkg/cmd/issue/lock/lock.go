@@ -91,6 +91,7 @@ func fields() []string {
 	}
 }
 
+// LockOptions holds the configuration for the lock and unlock commands.
 type LockOptions struct {
 	HttpClient func() (*http.Client, error)
 	Config     func() (gh.Config, error)
@@ -129,6 +130,7 @@ func (opts *LockOptions) setCommonOptions(f *cmdutil.Factory, args []string) err
 	return nil
 }
 
+// NewCmdLock creates a new cobra command for locking an issue or pull request conversation.
 func NewCmdLock(f *cmdutil.Factory, parentName string, runF func(string, *LockOptions) error) *cobra.Command {
 	opts := &LockOptions{
 		ParentCmd: parentName,
@@ -177,6 +179,7 @@ func NewCmdLock(f *cmdutil.Factory, parentName string, runF func(string, *LockOp
 	return cmd
 }
 
+// NewCmdUnlock creates a new cobra command for unlocking an issue or pull request conversation.
 func NewCmdUnlock(f *cmdutil.Factory, parentName string, runF func(string, *LockOptions) error) *cobra.Command {
 	opts := &LockOptions{ParentCmd: parentName}
 

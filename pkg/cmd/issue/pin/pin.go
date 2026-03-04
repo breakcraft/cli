@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// PinOptions holds the configuration for the pin command.
 type PinOptions struct {
 	HttpClient  func() (*http.Client, error)
 	Config      func() (gh.Config, error)
@@ -23,6 +24,7 @@ type PinOptions struct {
 	IssueNumber int
 }
 
+// NewCmdPin creates a new cobra command for pinning an issue to a repository.
 func NewCmdPin(f *cmdutil.Factory, runF func(*PinOptions) error) *cobra.Command {
 	opts := &PinOptions{
 		IO:         f.IOStreams,
