@@ -19,6 +19,7 @@ func executeParentHooks(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// EnableRepoOverride adds a --repo flag to the command and configures the factory to use it.
 func EnableRepoOverride(cmd *cobra.Command, f *Factory) {
 	cmd.PersistentFlags().StringP("repo", "R", "", "Select another repository using the `[HOST/]OWNER/REPO` format")
 	_ = cmd.RegisterFlagCompletionFunc("repo", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -57,6 +58,7 @@ func EnableRepoOverride(cmd *cobra.Command, f *Factory) {
 	}
 }
 
+// OverrideBaseRepoFunc returns a BaseRepo function that resolves to the override repository when set.
 func OverrideBaseRepoFunc(f *Factory, override string) func() (ghrepo.Interface, error) {
 	if override == "" {
 		override = os.Getenv("GH_REPO")

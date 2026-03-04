@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// MinimumArgs returns a PositionalArgs validator that requires at least n arguments.
 func MinimumArgs(n int, msg string) cobra.PositionalArgs {
 	if msg == "" {
 		return cobra.MinimumNArgs(1)
@@ -21,6 +22,7 @@ func MinimumArgs(n int, msg string) cobra.PositionalArgs {
 	}
 }
 
+// ExactArgs returns a PositionalArgs validator that requires exactly n arguments.
 func ExactArgs(n int, msg string) cobra.PositionalArgs {
 	return func(cmd *cobra.Command, args []string) error {
 		if len(args) > n {
@@ -35,6 +37,7 @@ func ExactArgs(n int, msg string) cobra.PositionalArgs {
 	}
 }
 
+// NoArgsQuoteReminder is a PositionalArgs validator that rejects arguments with a hint to quote values containing spaces.
 func NoArgsQuoteReminder(cmd *cobra.Command, args []string) error {
 	if len(args) < 1 {
 		return nil

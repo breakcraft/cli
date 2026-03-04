@@ -10,6 +10,7 @@ import (
 
 const skipAuthCheckAnnotation = "skipAuthCheck"
 
+// DisableAuthCheck annotates a command so that it skips the authentication check.
 func DisableAuthCheck(cmd *cobra.Command) {
 	if cmd.Annotations == nil {
 		cmd.Annotations = map[string]string{}
@@ -18,6 +19,7 @@ func DisableAuthCheck(cmd *cobra.Command) {
 	cmd.Annotations[skipAuthCheckAnnotation] = "true"
 }
 
+// DisableAuthCheckFlag annotates a flag so that setting it skips the authentication check.
 func DisableAuthCheckFlag(flag *pflag.Flag) {
 	if flag.Annotations == nil {
 		flag.Annotations = map[string][]string{}
@@ -26,6 +28,7 @@ func DisableAuthCheckFlag(flag *pflag.Flag) {
 	flag.Annotations[skipAuthCheckAnnotation] = []string{"true"}
 }
 
+// CheckAuth reports whether valid authentication credentials are available in the given config.
 func CheckAuth(cfg gh.Config) bool {
 	if cfg.Authentication().HasEnvToken() {
 		return true
@@ -38,6 +41,7 @@ func CheckAuth(cfg gh.Config) bool {
 	return false
 }
 
+// IsAuthCheckEnabled reports whether the authentication check should run for the given command.
 func IsAuthCheckEnabled(cmd *cobra.Command) bool {
 	switch cmd.Name() {
 	case "help", cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:

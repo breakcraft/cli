@@ -35,6 +35,7 @@ func StringEnumFlag(cmd *cobra.Command, p *string, name, shorthand, defaultValue
 	return f
 }
 
+// StringSliceEnumFlag defines a new string-slice flag that only allows values listed in options.
 func StringSliceEnumFlag(cmd *cobra.Command, p *[]string, name, shorthand string, defaultValues, options []string, usage string) *pflag.Flag {
 	*p = defaultValues
 	val := &enumMultiValue{value: p, options: options}
@@ -77,11 +78,13 @@ func newStringValue(p **string) *stringValue {
 	return &stringValue{p}
 }
 
+// Set assigns the string value.
 func (s *stringValue) Set(value string) error {
 	*s.string = &value
 	return nil
 }
 
+// String returns the current string value or an empty string if unset.
 func (s *stringValue) String() string {
 	if s.string == nil || *s.string == nil {
 		return ""
@@ -89,6 +92,7 @@ func (s *stringValue) String() string {
 	return **s.string
 }
 
+// Type returns the flag type name "string".
 func (s *stringValue) Type() string {
 	return "string"
 }
@@ -101,12 +105,14 @@ func newBoolValue(p **bool) *boolValue {
 	return &boolValue{p}
 }
 
+// Set parses and assigns the boolean value.
 func (b *boolValue) Set(value string) error {
 	v, err := strconv.ParseBool(value)
 	*b.bool = &v
 	return err
 }
 
+// String returns the current boolean value as a string.
 func (b *boolValue) String() string {
 	if b.bool == nil || *b.bool == nil {
 		return "false"
@@ -116,10 +122,12 @@ func (b *boolValue) String() string {
 	return "false"
 }
 
+// Type returns the flag type name "bool".
 func (b *boolValue) Type() string {
 	return "bool"
 }
 
+// IsBoolFlag returns true, indicating this flag does not require an argument.
 func (b *boolValue) IsBoolFlag() bool {
 	return true
 }
@@ -129,6 +137,7 @@ type enumValue struct {
 	options []string
 }
 
+// Set validates and assigns the value, returning an error if it is not in the allowed options.
 func (e *enumValue) Set(value string) error {
 	if !isIncluded(value, e.options) {
 		return fmt.Errorf("valid values are %s", formatValuesForUsageDocs(e.options))
@@ -137,10 +146,12 @@ func (e *enumValue) Set(value string) error {
 	return nil
 }
 
+// String returns the current enum value.
 func (e *enumValue) String() string {
 	return *e.string
 }
 
+// Type returns the flag type name "string".
 func (e *enumValue) Type() string {
 	return "string"
 }
@@ -150,6 +161,7 @@ type enumMultiValue struct {
 	options []string
 }
 
+// Set validates and appends comma-separated values, returning an error if any value is not in the allowed options.
 func (e *enumMultiValue) Set(value string) error {
 	items := strings.Split(value, ",")
 	for _, item := range items {
@@ -161,6 +173,7 @@ func (e *enumMultiValue) Set(value string) error {
 	return nil
 }
 
+// String returns the current values formatted as a brace-enclosed, comma-separated list.
 func (e *enumMultiValue) String() string {
 	if len(*e.value) == 0 {
 		return ""
@@ -168,6 +181,7 @@ func (e *enumMultiValue) String() string {
 	return fmt.Sprintf("{%s}", strings.Join(*e.value, ", "))
 }
 
+// Type returns the flag type name "stringSlice".
 func (e *enumMultiValue) Type() string {
 	return "stringSlice"
 }

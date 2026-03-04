@@ -16,6 +16,7 @@ import (
 	"github.com/cli/cli/v2/pkg/iostreams"
 )
 
+// Factory provides common dependencies for command constructors.
 type Factory struct {
 	AppVersion     string
 	ExecutableName string

@@ -23,10 +23,12 @@ type FlagError struct {
 	err error
 }
 
+// Error returns the underlying error message.
 func (fe *FlagError) Error() string {
 	return fe.err.Error()
 }
 
+// Unwrap returns the wrapped error.
 func (fe *FlagError) Unwrap() error {
 	return fe.err
 }
@@ -40,10 +42,12 @@ var CancelError = errors.New("CancelError")
 // PendingError signals nothing failed but something is pending
 var PendingError = errors.New("PendingError")
 
+// IsUserCancellation reports whether err indicates that the user cancelled the operation.
 func IsUserCancellation(err error) bool {
 	return errors.Is(err, CancelError) || errors.Is(err, terminal.InterruptErr)
 }
 
+// MutuallyExclusive returns a FlagError with the given message if more than one of the conditions is true.
 func MutuallyExclusive(message string, conditions ...bool) error {
 	numTrue := 0
 	for _, ok := range conditions {
@@ -57,14 +61,17 @@ func MutuallyExclusive(message string, conditions ...bool) error {
 	return nil
 }
 
+// NoResultsError represents an error indicating that a query returned no results.
 type NoResultsError struct {
 	message string
 }
 
+// Error returns the no-results message.
 func (e NoResultsError) Error() string {
 	return e.message
 }
 
+// NewNoResultsError creates a NoResultsError with the given message.
 func NewNoResultsError(message string) NoResultsError {
 	return NoResultsError{message: message}
 }

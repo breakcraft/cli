@@ -19,10 +19,12 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// JSONFlagError wraps an error related to JSON flag validation.
 type JSONFlagError struct {
 	error
 }
 
+// AddJSONFlags registers --json, --jq, and --template flags on the command.
 func AddJSONFlags(cmd *cobra.Command, exportTarget *Exporter, fields []string) {
 	f := cmd.Flags()
 	addJsonFlag(f)
@@ -32,6 +34,7 @@ func AddJSONFlags(cmd *cobra.Command, exportTarget *Exporter, fields []string) {
 	setupJsonFlags(cmd, exportTarget, fields)
 }
 
+// AddJSONFlagsWithoutShorthand registers --json, --jq, and --template flags without short-hand aliases.
 func AddJSONFlagsWithoutShorthand(cmd *cobra.Command, exportTarget *Exporter, fields []string) {
 	f := cmd.Flags()
 	addJsonFlag(f)
@@ -143,6 +146,7 @@ func checkJSONFlags(cmd *cobra.Command) (*jsonExporter, error) {
 	return nil, nil
 }
 
+// AddFormatFlags registers --format, --jq, and --template flags on the command.
 func AddFormatFlags(cmd *cobra.Command, exportTarget *Exporter) {
 	var format string
 	StringEnumFlag(cmd, &format, "format", "", "", []string{"json"}, "Output format")
@@ -195,6 +199,7 @@ func checkFormatFlags(cmd *cobra.Command) (*jsonExporter, error) {
 	return nil, nil
 }
 
+// Exporter defines methods for writing structured output from commands.
 type Exporter interface {
 	Fields() []string
 	Write(io *iostreams.IOStreams, data interface{}) error
@@ -211,10 +216,12 @@ func NewJSONExporter() *jsonExporter {
 	return &jsonExporter{}
 }
 
+// Fields returns the list of field names to export.
 func (e *jsonExporter) Fields() []string {
 	return e.fields
 }
 
+// SetFields sets the list of field names to export.
 func (e *jsonExporter) SetFields(fields []string) {
 	e.fields = fields
 }
