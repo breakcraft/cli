@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// ViewOptions holds the options for the view workflow command.
 type ViewOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -42,6 +43,7 @@ type iprompter interface {
 	Select(string, string, []string) (int, error)
 }
 
+// NewCmdView creates a new cobra command for viewing a workflow.
 func NewCmdView(f *cmdutil.Factory, runF func(*ViewOptions) error) *cobra.Command {
 	opts := &ViewOptions{
 		IO:         f.IOStreams,

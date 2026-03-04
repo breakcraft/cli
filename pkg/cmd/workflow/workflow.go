@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// NewCmdWorkflow creates the top-level workflow command for GitHub Actions.
 func NewCmdWorkflow(f *cmdutil.Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "workflow <command>",

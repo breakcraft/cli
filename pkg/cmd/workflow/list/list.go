@@ -15,6 +15,7 @@ import (
 
 const defaultLimit = 50
 
+// ListOptions holds the options for the list workflows command.
 type ListOptions struct {
 	IO         *iostreams.IOStreams
 	HttpClient func() (*http.Client, error)
@@ -32,6 +33,7 @@ var workflowFields = []string{
 	"state",
 }
 
+// NewCmdList creates a new cobra command for listing workflows.
 func NewCmdList(f *cmdutil.Factory, runF func(*ListOptions) error) *cobra.Command {
 	opts := &ListOptions{
 		IO:         f.IOStreams,

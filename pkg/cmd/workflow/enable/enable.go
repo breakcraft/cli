@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// EnableOptions holds the options for the enable workflow command.
 type EnableOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -27,6 +28,7 @@ type iprompter interface {
 	Select(string, string, []string) (int, error)
 }
 
+// NewCmdEnable creates a new cobra command for enabling a workflow.
 func NewCmdEnable(f *cmdutil.Factory, runF func(*EnableOptions) error) *cobra.Command {
 	opts := &EnableOptions{
 		IO:         f.IOStreams,

@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// DisableOptions holds the options for the disable workflow command.
 type DisableOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -27,6 +28,7 @@ type iprompter interface {
 	Select(string, string, []string) (int, error)
 }
 
+// NewCmdDisable creates a new cobra command for disabling a workflow.
 func NewCmdDisable(f *cmdutil.Factory, runF func(*DisableOptions) error) *cobra.Command {
 	opts := &DisableOptions{
 		IO:         f.IOStreams,

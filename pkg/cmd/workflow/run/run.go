@@ -24,6 +24,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// RunOptions holds the options for the run workflow command.
 type RunOptions struct {
 	HttpClient func() (*http.Client, error)
 	IO         *iostreams.IOStreams
@@ -47,6 +48,7 @@ type iprompter interface {
 	Select(string, string, []string) (int, error)
 }
 
+// NewCmdRun creates a new cobra command for running a workflow.
 func NewCmdRun(f *cmdutil.Factory, runF func(*RunOptions) error) *cobra.Command {
 	opts := &RunOptions{
 		IO:         f.IOStreams,
@@ -190,10 +192,12 @@ func parseFields(opts RunOptions) (map[string]string, error) {
 	return params, nil
 }
 
+// InputAnswer collects user-provided input values for workflow dispatch.
 type InputAnswer struct {
 	providedInputs map[string]string
 }
 
+// WriteAnswer stores a single input value by name into the answer map.
 func (ia *InputAnswer) WriteAnswer(name string, value interface{}) error {
 	if s, ok := value.(string); ok {
 		ia.providedInputs[name] = s
@@ -390,6 +394,7 @@ func runRun(opts *RunOptions) error {
 	return nil
 }
 
+// WorkflowInput describes a single input parameter defined in a workflow file.
 type WorkflowInput struct {
 	Name        string
 	Required    bool

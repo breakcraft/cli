@@ -20,8 +20,11 @@ import (
 )
 
 const (
-	Active             WorkflowState = "active"
-	DisabledManually   WorkflowState = "disabled_manually"
+	// Active represents an enabled workflow state.
+	Active WorkflowState = "active"
+	// DisabledManually represents a workflow disabled by a user.
+	DisabledManually WorkflowState = "disabled_manually"
+	// DisabledInactivity represents a workflow disabled due to inactivity.
 	DisabledInactivity WorkflowState = "disabled_inactivity"
 )
 
@@ -29,8 +32,10 @@ type iprompter interface {
 	Select(string, string, []string) (int, error)
 }
 
+// WorkflowState represents the state of a GitHub Actions workflow.
 type WorkflowState string
 
+// Workflow represents a GitHub Actions workflow.
 type Workflow struct {
 	Name  string
 	ID    int64
@@ -38,22 +43,27 @@ type Workflow struct {
 	State WorkflowState
 }
 
+// WorkflowsPayload is the response payload for listing workflows from the API.
 type WorkflowsPayload struct {
 	Workflows []Workflow
 }
 
+// Disabled reports whether the workflow is in a disabled state.
 func (w *Workflow) Disabled() bool {
 	return w.State != Active
 }
 
+// Base returns the file name component of the workflow path.
 func (w *Workflow) Base() string {
 	return path.Base(w.Path)
 }
 
+// ExportData returns the workflow fields as a map for structured output.
 func (w *Workflow) ExportData(fields []string) map[string]interface{} {
 	return cmdutil.StructExportData(w, fields)
 }
 
+// GetWorkflows fetches workflows for a repository, up to the given limit (0 for all).
 func GetWorkflows(client *api.Client, repo ghrepo.Interface, limit int) ([]Workflow, error) {
 	perPage := limit
 	page := 1
@@ -93,6 +103,7 @@ func GetWorkflows(client *api.Client, repo ghrepo.Interface, limit int) ([]Workf
 	return workflows, nil
 }
 
+// FilteredAllError indicates that all workflows were filtered out during selection.
 type FilteredAllError struct {
 	error
 }
@@ -146,6 +157,7 @@ func FindWorkflow(client *api.Client, repo ghrepo.Interface, workflowSelector st
 	return getWorkflowsByName(client, repo, workflowSelector, states)
 }
 
+// GetWorkflow fetches a single workflow by its database ID.
 func GetWorkflow(client *api.Client, repo ghrepo.Interface, workflowID int64) (*Workflow, error) {
 	return getWorkflowByID(client, repo, strconv.FormatInt(workflowID, 10))
 }
@@ -189,6 +201,7 @@ func getWorkflowsByName(client *api.Client, repo ghrepo.Interface, name string, 
 	return filtered, nil
 }
 
+// ResolveWorkflow finds a workflow by selector or prompts the user to choose one.
 func ResolveWorkflow(p iprompter, io *iostreams.IOStreams, client *api.Client, repo ghrepo.Interface, prompt bool, workflowSelector string, states []WorkflowState) (*Workflow, error) {
 	if prompt {
 		workflows, err := GetWorkflows(client, repo, 0)
@@ -232,6 +245,7 @@ func ResolveWorkflow(p iprompter, io *iostreams.IOStreams, client *api.Client, r
 	return selectWorkflow(p, workflows, "Which workflow do you mean?", states)
 }
 
+// GetWorkflowContent retrieves and decodes the YAML content of a workflow file.
 func GetWorkflowContent(client *api.Client, repo ghrepo.Interface, workflow Workflow, ref string) ([]byte, error) {
 	path := fmt.Sprintf("repos/%s/contents/%s", ghrepo.FullName(repo), workflow.Path)
 	if ref != "" {
