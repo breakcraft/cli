@@ -3,7 +3,9 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -100,14 +102,14 @@ func TestChecksStatus_SummarisingCheckRuns(t *testing.T) {
 			expectedChecksStatus: PullRequestChecksStatus{Failing: 1, Total: 1},
 		},
 		{
-			name:                 "COMPLETED / CANCELLED is treated as Failing",
+			name:                 "COMPLETED / CANCELLED is excluded from counts",
 			payload:              singleCompletedCheckRunWithConclusion("CANCELLED"),
-			expectedChecksStatus: PullRequestChecksStatus{Failing: 1, Total: 1},
+			expectedChecksStatus: PullRequestChecksStatus{},
 		},
 		{
-			name:                 "COMPLETED / CANCELLED is treated as Failing",
+			name:                 "COMPLETED / CANCELLED is excluded from counts (duplicate)",
 			payload:              singleCompletedCheckRunWithConclusion("CANCELLED"),
-			expectedChecksStatus: PullRequestChecksStatus{Failing: 1, Total: 1},
+			expectedChecksStatus: PullRequestChecksStatus{},
 		},
 		{
 			name:                 "COMPLETED / FAILURE is treated as Failing",
@@ -208,9 +210,9 @@ func TestChecksStatus_SummarisingCheckRunsAndStatusContexts(t *testing.T) {
 		}
 	} }] } }
 	`,
-		completedCheckRunNode("SUCCESS"),
-		statusContextNode("PENDING"),
-		completedCheckRunNode("FAILURE"),
+		completedCheckRunNodeWithName("build", "SUCCESS"),
+		statusContextNodeWithName("ci/deploy", "PENDING"),
+		completedCheckRunNodeWithName("lint", "FAILURE"),
 	)
 
 	var pr PullRequest
@@ -332,9 +334,9 @@ func TestChecksStatus_SummarisingCheckRunAndStatusContextCountsByState(t *testin
 
 	expectedChecksStatus := PullRequestChecksStatus{
 		Pending: 11,
-		Failing: 6,
+		Failing: 5,
 		Passing: 4,
-		Total:   20,
+		Total:   19,
 	}
 	require.Equal(t, expectedChecksStatus, pr.ChecksStatus())
 }
@@ -404,10 +406,238 @@ func completedCheckRunNode(conclusion string) string {
 	}`, conclusion)
 }
 
+func completedCheckRunNodeWithName(name, conclusion string) string {
+	return fmt.Sprintf(`
+	{
+		"__typename": "CheckRun",
+		"name": "%s",
+		"status": "COMPLETED",
+		"conclusion": "%s"
+	}`, name, conclusion)
+}
+
 func statusContextNode(state string) string {
 	return fmt.Sprintf(`
 	{
 		"__typename": "StatusContext",
 		"state": "%s"
 	}`, state)
+}
+
+func statusContextNodeWithName(context, state string) string {
+	return fmt.Sprintf(`
+	{
+		"__typename": "StatusContext",
+		"context": "%s",
+		"state": "%s"
+	}`, context, state)
+}
+
+func TestChecksStatus_DuplicateCheckRunsAreDeduplicated(t *testing.T) {
+	t.Parallel()
+
+	// Simulate cancel-in-progress: a cancelled run followed by a newer successful run
+	// for the same check name. Only the newer (successful) run should be counted.
+	pr := PullRequest{}
+	pr.StatusCheckRollup.Nodes = []StatusCheckRollupNode{
+		{
+			Commit: StatusCheckRollupCommit{
+				StatusCheckRollup: CommitStatusCheckRollup{
+					Contexts: CheckContexts{
+						Nodes: []CheckContext{
+							{
+								TypeName:   "CheckRun",
+								Name:       "Prevent Merging",
+								Status:     "COMPLETED",
+								Conclusion: CheckConclusionStateCancelled,
+								StartedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+							},
+							{
+								TypeName:   "CheckRun",
+								Name:       "Prevent Merging",
+								Status:     "COMPLETED",
+								Conclusion: CheckConclusionStateSuccess,
+								StartedAt:  time.Date(2024, 1, 1, 1, 0, 0, 0, time.UTC),
+							},
+							{
+								TypeName:   "CheckRun",
+								Name:       "Build",
+								Status:     "COMPLETED",
+								Conclusion: CheckConclusionStateSuccess,
+								StartedAt:  time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	status := pr.ChecksStatus()
+	require.Equal(t, PullRequestChecksStatus{
+		Passing: 2,
+		Failing: 0,
+		Pending: 0,
+		Total:   2,
+	}, status)
+}
+
+func TestEliminateDuplicateChecks(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		checkContexts []CheckContext
+		want          []CheckContext
+	}{
+		{
+			name: "duplicate CheckRun keeps most recent",
+			checkContexts: []CheckContext{
+				{
+					TypeName:   "CheckRun",
+					Name:       "lint",
+					Status:     "COMPLETED",
+					Conclusion: "FAILURE",
+					StartedAt:  time.Date(2022, 1, 1, 1, 1, 1, 1, time.UTC),
+				},
+				{
+					TypeName:   "CheckRun",
+					Name:       "lint",
+					Status:     "COMPLETED",
+					Conclusion: "SUCCESS",
+					StartedAt:  time.Date(2022, 2, 2, 2, 2, 2, 2, time.UTC),
+				},
+				{
+					TypeName:   "CheckRun",
+					Name:       "build",
+					Status:     "COMPLETED",
+					Conclusion: "SUCCESS",
+					StartedAt:  time.Date(2022, 1, 1, 1, 1, 1, 1, time.UTC),
+				},
+			},
+			want: []CheckContext{
+				{
+					TypeName:   "CheckRun",
+					Name:       "lint",
+					Status:     "COMPLETED",
+					Conclusion: "SUCCESS",
+					StartedAt:  time.Date(2022, 2, 2, 2, 2, 2, 2, time.UTC),
+				},
+				{
+					TypeName:   "CheckRun",
+					Name:       "build",
+					Status:     "COMPLETED",
+					Conclusion: "SUCCESS",
+					StartedAt:  time.Date(2022, 1, 1, 1, 1, 1, 1, time.UTC),
+				},
+			},
+		},
+		{
+			name: "duplicate StatusContext keeps most recent",
+			checkContexts: []CheckContext{
+				{
+					TypeName:  "StatusContext",
+					Context:   "ci/test",
+					State:     "FAILURE",
+					StartedAt: time.Date(2022, 1, 1, 1, 1, 1, 1, time.UTC),
+				},
+				{
+					TypeName:  "StatusContext",
+					Context:   "ci/test",
+					State:     "SUCCESS",
+					StartedAt: time.Date(2022, 2, 2, 2, 2, 2, 2, time.UTC),
+				},
+			},
+			want: []CheckContext{
+				{
+					TypeName:  "StatusContext",
+					Context:   "ci/test",
+					State:     "SUCCESS",
+					StartedAt: time.Date(2022, 2, 2, 2, 2, 2, 2, time.UTC),
+				},
+			},
+		},
+		{
+			name: "unique checks are preserved",
+			checkContexts: []CheckContext{
+				{
+					TypeName:   "CheckRun",
+					Name:       "build",
+					Status:     "COMPLETED",
+					Conclusion: "SUCCESS",
+					StartedAt:  time.Date(2022, 1, 1, 1, 1, 1, 1, time.UTC),
+				},
+				{
+					TypeName:  "StatusContext",
+					Context:   "ci/test",
+					State:     "SUCCESS",
+					StartedAt: time.Date(2022, 1, 1, 1, 1, 1, 1, time.UTC),
+				},
+			},
+			want: []CheckContext{
+				{
+					TypeName:   "CheckRun",
+					Name:       "build",
+					Status:     "COMPLETED",
+					Conclusion: "SUCCESS",
+					StartedAt:  time.Date(2022, 1, 1, 1, 1, 1, 1, time.UTC),
+				},
+				{
+					TypeName:  "StatusContext",
+					Context:   "ci/test",
+					State:     "SUCCESS",
+					StartedAt: time.Date(2022, 1, 1, 1, 1, 1, 1, time.UTC),
+				},
+			},
+		},
+		{
+			name: "different workflow names are not deduplicated",
+			checkContexts: []CheckContext{
+				{
+					TypeName:   "CheckRun",
+					Name:       "build",
+					Status:     "COMPLETED",
+					Conclusion: "SUCCESS",
+					StartedAt:  time.Date(2022, 1, 1, 1, 1, 1, 1, time.UTC),
+					CheckSuite: CheckSuite{WorkflowRun: WorkflowRun{Event: "push", Workflow: Workflow{Name: "CI"}}},
+				},
+				{
+					TypeName:   "CheckRun",
+					Name:       "build",
+					Status:     "COMPLETED",
+					Conclusion: "SUCCESS",
+					StartedAt:  time.Date(2022, 1, 1, 1, 1, 1, 1, time.UTC),
+					CheckSuite: CheckSuite{WorkflowRun: WorkflowRun{Event: "push", Workflow: Workflow{Name: "Release"}}},
+				},
+			},
+			want: []CheckContext{
+				{
+					TypeName:   "CheckRun",
+					Name:       "build",
+					Status:     "COMPLETED",
+					Conclusion: "SUCCESS",
+					StartedAt:  time.Date(2022, 1, 1, 1, 1, 1, 1, time.UTC),
+					CheckSuite: CheckSuite{WorkflowRun: WorkflowRun{Event: "push", Workflow: Workflow{Name: "CI"}}},
+				},
+				{
+					TypeName:   "CheckRun",
+					Name:       "build",
+					Status:     "COMPLETED",
+					Conclusion: "SUCCESS",
+					StartedAt:  time.Date(2022, 1, 1, 1, 1, 1, 1, time.UTC),
+					CheckSuite: CheckSuite{WorkflowRun: WorkflowRun{Event: "push", Workflow: Workflow{Name: "Release"}}},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := EliminateDuplicateChecks(tt.checkContexts)
+			if !reflect.DeepEqual(tt.want, got) {
+				t.Errorf("got EliminateDuplicateChecks %+v, want %+v", got, tt.want)
+			}
+		})
+	}
 }

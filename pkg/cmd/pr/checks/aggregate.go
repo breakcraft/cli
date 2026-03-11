@@ -1,8 +1,6 @@
 package checks
 
 import (
-	"fmt"
-	"sort"
 	"time"
 
 	"github.com/cli/cli/v2/api"
@@ -34,7 +32,7 @@ func (ch *check) ExportData(fields []string) map[string]interface{} {
 }
 
 func aggregateChecks(checkContexts []api.CheckContext, requiredChecks bool) (checks []check, counts checkCounts) {
-	for _, c := range eliminateDuplicates(checkContexts) {
+	for _, c := range api.EliminateDuplicateChecks(checkContexts) {
 		if requiredChecks && !c.IsRequired {
 			continue
 		}
@@ -90,31 +88,4 @@ func aggregateChecks(checkContexts []api.CheckContext, requiredChecks bool) (che
 		checks = append(checks, item)
 	}
 	return
-}
-
-// eliminateDuplicates filters a set of checks to only the most recent ones if the set includes repeated runs
-func eliminateDuplicates(checkContexts []api.CheckContext) []api.CheckContext {
-	sort.Slice(checkContexts, func(i, j int) bool { return checkContexts[i].StartedAt.After(checkContexts[j].StartedAt) })
-
-	mapChecks := make(map[string]struct{})
-	mapContexts := make(map[string]struct{})
-	unique := make([]api.CheckContext, 0, len(checkContexts))
-
-	for _, ctx := range checkContexts {
-		if ctx.Context != "" {
-			if _, exists := mapContexts[ctx.Context]; exists {
-				continue
-			}
-			mapContexts[ctx.Context] = struct{}{}
-		} else {
-			key := fmt.Sprintf("%s/%s/%s", ctx.Name, ctx.CheckSuite.WorkflowRun.Workflow.Name, ctx.CheckSuite.WorkflowRun.Event)
-			if _, exists := mapChecks[key]; exists {
-				continue
-			}
-			mapChecks[key] = struct{}{}
-		}
-		unique = append(unique, ctx)
-	}
-
-	return unique
 }

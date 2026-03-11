@@ -26,7 +26,8 @@
                       "contexts": {
                         "nodes": [
                           {
-                            "__typeName": "StatusContext",
+                            "__typename": "StatusContext",
+                            "context": "ci/build",
                             "state": "SUCCESS"
                           }
                         ]
@@ -81,7 +82,8 @@
                       "contexts": {
                         "nodes": [
                           {
-                            "__typeName": "CheckRun",
+                            "__typename": "CheckRun",
+                            "name": "build",
                             "status": "IN_PROGRESS",
                             "conclusion": ""
                           }
@@ -111,16 +113,19 @@
                       "contexts": {
                         "nodes": [
                           {
-                            "__typeName": "CheckRun",
+                            "__typename": "CheckRun",
+                            "name": "build",
                             "status": "IN_PROGRESS",
                             "conclusion": ""
                           },
                           {
-                            "__typeName": "StatusContext",
+                            "__typename": "StatusContext",
+                            "context": "ci/deploy",
                             "state": "FAILURE"
                           },
                           {
-                            "__typeName": "CheckRun",
+                            "__typename": "CheckRun",
+                            "name": "lint",
                             "status": "COMPLETED",
                             "conclusion": "NEUTRAL"
                           }
@@ -149,7 +154,8 @@
                       "contexts": {
                         "nodes": [
                           {
-                            "__typeName": "StatusContext",
+                            "__typename": "StatusContext",
+                            "context": "ci/build",
                             "state": "SUCCESS"
                           }
                         ]

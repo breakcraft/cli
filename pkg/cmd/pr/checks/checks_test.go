@@ -1018,7 +1018,7 @@ func TestEliminateDuplicates(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := eliminateDuplicates(tt.checkContexts)
+			got := api.EliminateDuplicateChecks(tt.checkContexts)
 			if !reflect.DeepEqual(tt.want, got) {
 				t.Errorf("got eliminateDuplicates %+v, want %+v\n", got, tt.want)
 			}

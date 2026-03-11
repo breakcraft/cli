@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"time"
 
 	"github.com/cli/cli/v2/internal/ghrepo"
@@ -347,6 +348,8 @@ func (pr *PullRequest) ChecksStatus() PullRequestChecksStatus {
 				summary.Passing += countByState.Count
 			case failing:
 				summary.Failing += countByState.Count
+			case cancelled:
+				summary.Total -= countByState.Count
 			default:
 				summary.Pending += countByState.Count
 			}
@@ -367,7 +370,7 @@ func (pr *PullRequest) ChecksStatus() PullRequestChecksStatus {
 	}
 
 	// If we don't have the counts by state, then we'll need to summarise by looking at the more detailed contexts
-	for _, c := range contexts.Nodes {
+	for _, c := range EliminateDuplicateChecks(contexts.Nodes) {
 		// Nodes are a discriminated union of CheckRun or StatusContext and we can match on
 		// the TypeName to narrow the type.
 		if c.TypeName == "CheckRun" {
@@ -379,6 +382,8 @@ func (pr *PullRequest) ChecksStatus() PullRequestChecksStatus {
 					summary.Passing++
 				case failing:
 					summary.Failing++
+				case cancelled:
+					continue
 				default:
 					summary.Pending++
 				}
@@ -407,9 +412,10 @@ func (pr *PullRequest) ChecksStatus() PullRequestChecksStatus {
 type checkStatus int
 
 const (
-	passing checkStatus = iota
+	passing   checkStatus = iota
 	failing
 	pending
+	cancelled
 )
 
 func parseCheckStatusFromStatusState(state StatusState) checkStatus {
@@ -432,8 +438,10 @@ func parseCheckStatusFromCheckRunState(state CheckRunState) checkStatus {
 	switch state {
 	case CheckRunStateNeutral, CheckRunStateSkipped, CheckRunStateSuccess:
 		return passing
-	case CheckRunStateActionRequired, CheckRunStateCancelled, CheckRunStateFailure, CheckRunStateTimedOut:
+	case CheckRunStateActionRequired, CheckRunStateFailure, CheckRunStateTimedOut:
 		return failing
+	case CheckRunStateCancelled:
+		return cancelled
 	case CheckRunStateCompleted, CheckRunStateInProgress, CheckRunStatePending, CheckRunStateQueued,
 		CheckRunStateStale, CheckRunStateStartupFailure, CheckRunStateWaiting:
 		return pending
@@ -449,8 +457,10 @@ func parseCheckStatusFromCheckConclusionState(state CheckConclusionState) checkS
 	switch state {
 	case CheckConclusionStateNeutral, CheckConclusionStateSkipped, CheckConclusionStateSuccess:
 		return passing
-	case CheckConclusionStateActionRequired, CheckConclusionStateCancelled, CheckConclusionStateFailure, CheckConclusionStateTimedOut:
+	case CheckConclusionStateActionRequired, CheckConclusionStateFailure, CheckConclusionStateTimedOut:
 		return failing
+	case CheckConclusionStateCancelled:
+		return cancelled
 	case CheckConclusionStateStale, CheckConclusionStateStartupFailure:
 		return pending
 	// Currently, we treat anything unknown as pending, which includes any future unknown
@@ -459,6 +469,35 @@ func parseCheckStatusFromCheckConclusionState(state CheckConclusionState) checkS
 	default:
 		return pending
 	}
+}
+
+// EliminateDuplicateChecks filters a set of checks to only the most recent ones if the set
+// includes repeated runs. It deduplicates CheckRun entries by name/workflow/event and
+// StatusContext entries by context name, keeping the most recently started entry in each case.
+func EliminateDuplicateChecks(checkContexts []CheckContext) []CheckContext {
+	sort.Slice(checkContexts, func(i, j int) bool { return checkContexts[i].StartedAt.After(checkContexts[j].StartedAt) })
+
+	mapChecks := make(map[string]struct{})
+	mapContexts := make(map[string]struct{})
+	unique := make([]CheckContext, 0, len(checkContexts))
+
+	for _, ctx := range checkContexts {
+		if ctx.Context != "" {
+			if _, exists := mapContexts[ctx.Context]; exists {
+				continue
+			}
+			mapContexts[ctx.Context] = struct{}{}
+		} else {
+			key := fmt.Sprintf("%s/%s/%s", ctx.Name, ctx.CheckSuite.WorkflowRun.Workflow.Name, ctx.CheckSuite.WorkflowRun.Event)
+			if _, exists := mapChecks[key]; exists {
+				continue
+			}
+			mapChecks[key] = struct{}{}
+		}
+		unique = append(unique, ctx)
+	}
+
+	return unique
 }
 
 // CreatePullRequest creates a pull request in a GitHub repository
