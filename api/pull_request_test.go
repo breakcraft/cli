@@ -397,15 +397,6 @@ func singleStatusContextWithState(state string) string {
 	`, state)
 }
 
-func completedCheckRunNode(conclusion string) string {
-	return fmt.Sprintf(`
-	{
-		"__typename": "CheckRun",
-		"status": "COMPLETED",
-		"conclusion": "%s"
-	}`, conclusion)
-}
-
 func completedCheckRunNodeWithName(name, conclusion string) string {
 	return fmt.Sprintf(`
 	{
@@ -414,14 +405,6 @@ func completedCheckRunNodeWithName(name, conclusion string) string {
 		"status": "COMPLETED",
 		"conclusion": "%s"
 	}`, name, conclusion)
-}
-
-func statusContextNode(state string) string {
-	return fmt.Sprintf(`
-	{
-		"__typename": "StatusContext",
-		"state": "%s"
-	}`, state)
 }
 
 func statusContextNodeWithName(context, state string) string {

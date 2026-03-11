@@ -412,7 +412,7 @@ func (pr *PullRequest) ChecksStatus() PullRequestChecksStatus {
 type checkStatus int
 
 const (
-	passing   checkStatus = iota
+	passing checkStatus = iota
 	failing
 	pending
 	cancelled
