@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
+
 	"testing"
 	"time"
 
@@ -618,9 +618,7 @@ func TestEliminateDuplicateChecks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := EliminateDuplicateChecks(tt.checkContexts)
-			if !reflect.DeepEqual(tt.want, got) {
-				t.Errorf("got EliminateDuplicateChecks %+v, want %+v", got, tt.want)
-			}
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
