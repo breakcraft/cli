@@ -18,6 +18,8 @@ go test -tags acceptance ./acceptance      # Acceptance tests (see acceptance/RE
 make lint         # Runs golangci-lint (same config as CI)
 ```
 
+**Important:** Always run `make lint` before committing. CI will reject PRs that fail linting.
+
 ## Architecture
 
 Entry point is `cmd/gh/main.go` → `internal/ghcmd.Main()` → `pkg/cmd/root.NewCmdRoot()`.
