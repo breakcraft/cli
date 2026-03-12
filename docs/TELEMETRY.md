@@ -55,6 +55,24 @@ During the initial rollout, only a subset of commands send usage data. Over time
 
 The full implementation can be found in [`internal/telemetry/`](https://github.com/cli/cli/tree/trunk/internal/telemetry/) and [`pkg/cmd/send-telemetry/`](https://github.com/cli/cli/tree/trunk/pkg/cmd/send-telemetry/).
 
+## Opting out
+
+You can opt out of telemetry in two ways:
+
+- **Environment variable**: Set `GH_NO_TELEMETRY` to any truthy value (e.g. `true`, `1`, `yes`) to disable telemetry for that invocation. This is useful for scripting or CI environments.
+
+  ```sh
+  GH_NO_TELEMETRY=true gh pr list
+  ```
+
+- **Configuration**: Set `no_telemetry` to a truthy value in your gh configuration file to permanently disable telemetry.
+
+  ```sh
+  gh config set no_telemetry true
+  ```
+
+The environment variable takes precedence over the configuration setting.
+
 ## Privacy
 
 GitHub CLI's telemetry practices are governed by [GitHub's General Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement).

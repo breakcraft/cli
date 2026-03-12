@@ -7,8 +7,6 @@
 //   - Telemetry is only sent on successful command completion. Commands that
 //     are interrupted (e.g. Ctrl+C) or fail with an error do not trigger the
 //     PersistentPostRun hook, so no event is recorded.
-//   - There is no opt-out mechanism yet. This should be added before shipping
-//     to public users (e.g. via a config setting or environment variable).
 package telemetry
 
 import (
@@ -148,4 +146,23 @@ func EnableTelemetry(cmd *cobra.Command) {
 // IsTelemetryEnabled checks whether telemetry is enabled for the given command.
 func IsTelemetryEnabled(cmd *cobra.Command) bool {
 	return cmd.Annotations[telemetryAnnotation] == "true"
+}
+
+// falseyValues are values considered falsy for environment variable checks.
+var falseyValues = []string{"", "0", "false", "no"}
+
+// lookupEnvFunc wraps os.LookupEnv. Can be replaced in tests.
+var lookupEnvFunc = os.LookupEnv
+
+// IsOptedOut reports whether the user has opted out of telemetry.
+//
+// The GH_NO_TELEMETRY environment variable takes precedence: if set to a truthy
+// value, telemetry is disabled. Otherwise, the no_telemetry config value is
+// checked using the same truthiness rules.
+func IsOptedOut(configNoTelemetry string) bool {
+	if envVal, ok := lookupEnvFunc("GH_NO_TELEMETRY"); ok {
+		return !slices.Contains(falseyValues, envVal)
+	}
+
+	return !slices.Contains(falseyValues, configNoTelemetry)
 }

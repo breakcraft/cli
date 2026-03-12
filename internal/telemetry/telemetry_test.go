@@ -286,3 +286,133 @@ func TestIsTelemetryEnabledNilAnnotations(t *testing.T) {
 	// Annotations is nil by default on a new command.
 	require.False(t, IsTelemetryEnabled(cmd))
 }
+
+func stubLookupEnv(fn func(string) (string, bool)) func() {
+	orig := lookupEnvFunc
+	lookupEnvFunc = fn
+	return func() { lookupEnvFunc = orig }
+}
+
+func TestIsOptedOut(t *testing.T) {
+	envSet := func(val string) func(string) (string, bool) {
+		return func(key string) (string, bool) {
+			require.Equal(t, "GH_NO_TELEMETRY", key)
+			return val, true
+		}
+	}
+	envUnset := func(key string) (string, bool) {
+		return "", false
+	}
+
+	tests := []struct {
+		name              string
+		lookupEnv         func(string) (string, bool)
+		configNoTelemetry string
+		want              bool
+	}{
+		{
+			name:              "env var unset, config empty",
+			lookupEnv:         envUnset,
+			configNoTelemetry: "",
+			want:              false,
+		},
+		{
+			name:              "env var set to true",
+			lookupEnv:         envSet("true"),
+			configNoTelemetry: "",
+			want:              true,
+		},
+		{
+			name:              "env var set to 1",
+			lookupEnv:         envSet("1"),
+			configNoTelemetry: "",
+			want:              true,
+		},
+		{
+			name:              "env var set to yes",
+			lookupEnv:         envSet("yes"),
+			configNoTelemetry: "",
+			want:              true,
+		},
+		{
+			name:              "env var set to any truthy value",
+			lookupEnv:         envSet("anything"),
+			configNoTelemetry: "",
+			want:              true,
+		},
+		{
+			name:              "env var set to false",
+			lookupEnv:         envSet("false"),
+			configNoTelemetry: "",
+			want:              false,
+		},
+		{
+			name:              "env var set to 0",
+			lookupEnv:         envSet("0"),
+			configNoTelemetry: "",
+			want:              false,
+		},
+		{
+			name:              "env var set to no",
+			lookupEnv:         envSet("no"),
+			configNoTelemetry: "",
+			want:              false,
+		},
+		{
+			name:              "env var set to empty string",
+			lookupEnv:         envSet(""),
+			configNoTelemetry: "",
+			want:              false,
+		},
+		{
+			name:              "config set to true",
+			lookupEnv:         envUnset,
+			configNoTelemetry: "true",
+			want:              true,
+		},
+		{
+			name:              "config set to 1",
+			lookupEnv:         envUnset,
+			configNoTelemetry: "1",
+			want:              true,
+		},
+		{
+			name:              "config set to yes",
+			lookupEnv:         envUnset,
+			configNoTelemetry: "yes",
+			want:              true,
+		},
+		{
+			name:              "config set to false",
+			lookupEnv:         envUnset,
+			configNoTelemetry: "false",
+			want:              false,
+		},
+		{
+			name:              "config set to 0",
+			lookupEnv:         envUnset,
+			configNoTelemetry: "0",
+			want:              false,
+		},
+		{
+			name:              "env var takes precedence over config (env truthy, config not set)",
+			lookupEnv:         envSet("1"),
+			configNoTelemetry: "",
+			want:              true,
+		},
+		{
+			name:              "env var takes precedence over config (env falsy, config true)",
+			lookupEnv:         envSet("false"),
+			configNoTelemetry: "true",
+			want:              false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Cleanup(stubLookupEnv(tt.lookupEnv))
+			got := IsOptedOut(tt.configNoTelemetry)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}

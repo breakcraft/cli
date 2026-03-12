@@ -99,6 +99,8 @@ var HelpTopics = []helpTopic{
 			When an extension is executed, gh checks for new versions for the executed extension once every 24 hours.
 			If a newer version was found, an upgrade notice is displayed on standard error.
 
+			%[1]sGH_NO_TELEMETRY%[1]s: set to a truthy value to prevent any usage telemetry from being sent to GitHub.
+
 			%[1]sGH_CONFIG_DIR%[1]s: the directory where gh will store configuration files. If not specified,
 			the default value will be one of the following paths (in order of precedence):
 			  - %[1]s$XDG_CONFIG_HOME/gh%[1]s (if %[1]s$XDG_CONFIG_HOME%[1]s is set),

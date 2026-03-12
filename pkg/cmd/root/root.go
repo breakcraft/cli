@@ -97,6 +97,14 @@ func NewCmdRoot(f *cmdutil.Factory, version, buildDate string) (*cobra.Command, 
 				return
 			}
 
+			var configNoTelemetry string
+			if entry := cfg.GetOrDefault("", "no_telemetry"); entry.IsSome() {
+				configNoTelemetry = entry.Unwrap().Value
+			}
+			if telemetry.IsOptedOut(configNoTelemetry) {
+				return
+			}
+
 			event := telemetry.BuildEventPayload(cmd, version)
 			if event == nil {
 				return

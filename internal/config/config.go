@@ -30,6 +30,7 @@ const (
 	pagerKey              = "pager"
 	promptKey             = "prompt"
 	preferEditorPromptKey = "prefer_editor_prompt"
+	noTelemetryKey        = "no_telemetry"
 	spinnerKey            = "spinner"
 	userKey               = "user"
 	usersKey              = "users"
@@ -680,6 +681,16 @@ var Options = []ConfigOption{
 		AllowedValues: []string{"enabled", "disabled"},
 		CurrentValue: func(c gh.Config, hostname string) string {
 			return c.Spinner(hostname).Value
+		},
+	},
+	{
+		Key:         noTelemetryKey,
+		Description: "set to a truthy value to opt out of sending usage telemetry to GitHub",
+		CurrentValue: func(c gh.Config, hostname string) string {
+			if entry := c.GetOrDefault(hostname, noTelemetryKey); entry.IsSome() {
+				return entry.Unwrap().Value
+			}
+			return ""
 		},
 	},
 }
