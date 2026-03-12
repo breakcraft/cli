@@ -220,3 +220,7 @@ client.Mutate(hostname, "MutationName", &mutation, variables)  // GraphQL mutati
 All REST requests include `X-GitHub-Api-Version: 2022-11-28`.
 
 For host resolution, use `cfg.Authentication().DefaultHost()` — not `ghinstance.Default()` which always returns `github.com`.
+
+## Skills
+
+Always use the `pull-request-author` skill when creating or updating pull requests.

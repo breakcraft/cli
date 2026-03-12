@@ -2,6 +2,7 @@ package sendtelemetry
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/cli/cli/v2/internal/config"
+	"github.com/cli/cli/v2/internal/featureflags/cafe"
 	"github.com/cli/cli/v2/internal/gh"
 	"github.com/cli/cli/v2/internal/telemetry"
 	"github.com/cli/cli/v2/pkg/cmdutil"
@@ -16,6 +18,36 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// fakeViewerAPI implements cafe.ViewerAPI for test CAFE servers.
+type fakeViewerAPI struct {
+	flags      []*cafe.FeatureFlag
+	stubbedErr error
+}
+
+func (f *fakeViewerAPI) GetDetails(context.Context, *cafe.GetDetailsRequest) (*cafe.GetDetailsResponse, error) {
+	return nil, nil
+}
+
+func (f *fakeViewerAPI) GetFeatureFlags(_ context.Context, _ *cafe.GetFeatureFlagsRequest) (*cafe.GetFeatureFlagsResponse, error) {
+	if f.stubbedErr != nil {
+		return nil, f.stubbedErr
+	}
+	return &cafe.GetFeatureFlagsResponse{FeatureFlags: f.flags}, nil
+}
+
+func newCAFEServer(t *testing.T, api cafe.ViewerAPI) *httptest.Server {
+	t.Helper()
+	handler := cafe.NewViewerAPIServer(api)
+	mux := http.NewServeMux()
+	mux.Handle(handler.PathPrefix(), handler)
+	return httptest.NewServer(mux)
+}
+
+func newCAFEServerWithFlags(t *testing.T, flags ...*cafe.FeatureFlag) *httptest.Server {
+	t.Helper()
+	return newCAFEServer(t, &fakeViewerAPI{flags: flags})
+}
 
 func TestNewCmdSendTelemetry(t *testing.T) {
 	tests := []struct {
@@ -104,13 +136,7 @@ func TestRunSendTelemetry(t *testing.T) {
 	// Helper to create a CAFE server that returns the flag as enabled
 	cafeEnabledServer := func(t *testing.T) *httptest.Server {
 		t.Helper()
-		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			json.NewEncoder(w).Encode(map[string]any{
-				"feature_flags": []map[string]any{
-					{"name": "gh_cli_telemetry", "is_enabled": true},
-				},
-			})
-		}))
+		return newCAFEServerWithFlags(t, &cafe.FeatureFlag{Name: telemetryFeatureFlag, IsEnabled: true})
 	}
 
 	tests := []struct {
@@ -226,10 +252,10 @@ func mustMarshal(t *testing.T, v any) string {
 
 func TestIsTelemetryFlagEnabled(t *testing.T) {
 	tests := []struct {
-		name         string
-		opts         *SendTelemetryOptions
-		cafeHandler  http.HandlerFunc
-		wantEnabled  bool
+		name        string
+		opts        *SendTelemetryOptions
+		cafeServer  func(t *testing.T) *httptest.Server
+		wantEnabled bool
 	}{
 		{
 			name: "enterprise host returns false",
@@ -253,13 +279,8 @@ func TestIsTelemetryFlagEnabled(t *testing.T) {
 				IsEnterprise: false,
 				AuthToken:    "token123",
 			},
-			cafeHandler: func(w http.ResponseWriter, r *http.Request) {
-				assert.Equal(t, "Bearer token123", r.Header.Get("Authorization"))
-				json.NewEncoder(w).Encode(map[string]any{
-					"feature_flags": []map[string]any{
-						{"name": "gh_cli_telemetry", "is_enabled": true},
-					},
-				})
+			cafeServer: func(t *testing.T) *httptest.Server {
+				return newCAFEServerWithFlags(t, &cafe.FeatureFlag{Name: telemetryFeatureFlag, IsEnabled: true})
 			},
 			wantEnabled: true,
 		},
@@ -269,12 +290,8 @@ func TestIsTelemetryFlagEnabled(t *testing.T) {
 				IsEnterprise: false,
 				AuthToken:    "token123",
 			},
-			cafeHandler: func(w http.ResponseWriter, r *http.Request) {
-				json.NewEncoder(w).Encode(map[string]any{
-					"feature_flags": []map[string]any{
-						{"name": "gh_cli_telemetry", "is_enabled": false},
-					},
-				})
+			cafeServer: func(t *testing.T) *httptest.Server {
+				return newCAFEServerWithFlags(t, &cafe.FeatureFlag{Name: telemetryFeatureFlag, IsEnabled: false})
 			},
 			wantEnabled: false,
 		},
@@ -284,8 +301,8 @@ func TestIsTelemetryFlagEnabled(t *testing.T) {
 				IsEnterprise: false,
 				AuthToken:    "token123",
 			},
-			cafeHandler: func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusInternalServerError)
+			cafeServer: func(t *testing.T) *httptest.Server {
+				return newCAFEServer(t, &fakeViewerAPI{stubbedErr: assert.AnError})
 			},
 			wantEnabled: false,
 		},
@@ -295,10 +312,8 @@ func TestIsTelemetryFlagEnabled(t *testing.T) {
 				IsEnterprise: false,
 				AuthToken:    "token123",
 			},
-			cafeHandler: func(w http.ResponseWriter, r *http.Request) {
-				json.NewEncoder(w).Encode(map[string]any{
-					"feature_flags": []map[string]any{},
-				})
+			cafeServer: func(t *testing.T) *httptest.Server {
+				return newCAFEServerWithFlags(t)
 			},
 			wantEnabled: false,
 		},
@@ -308,8 +323,8 @@ func TestIsTelemetryFlagEnabled(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.opts.StateDir = t.TempDir()
 
-			if tt.cafeHandler != nil {
-				server := httptest.NewServer(tt.cafeHandler)
+			if tt.cafeServer != nil {
+				server := tt.cafeServer(t)
 				defer server.Close()
 				tt.opts.FeatureFlagEndpointURL = server.URL
 			} else if !tt.opts.IsEnterprise && tt.opts.AuthToken == "" {
@@ -340,13 +355,7 @@ func TestRunSendTelemetry_featureFlagGating(t *testing.T) {
 		}))
 		defer centralServer.Close()
 
-		cafeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			json.NewEncoder(w).Encode(map[string]any{
-				"feature_flags": []map[string]any{
-					{"name": "gh_cli_telemetry", "is_enabled": true},
-				},
-			})
-		}))
+		cafeServer := newCAFEServerWithFlags(t, &cafe.FeatureFlag{Name: telemetryFeatureFlag, IsEnabled: true})
 		defer cafeServer.Close()
 
 		opts := &SendTelemetryOptions{
@@ -370,13 +379,7 @@ func TestRunSendTelemetry_featureFlagGating(t *testing.T) {
 		}))
 		defer centralServer.Close()
 
-		cafeServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			json.NewEncoder(w).Encode(map[string]any{
-				"feature_flags": []map[string]any{
-					{"name": "gh_cli_telemetry", "is_enabled": false},
-				},
-			})
-		}))
+		cafeServer := newCAFEServerWithFlags(t, &cafe.FeatureFlag{Name: telemetryFeatureFlag, IsEnabled: false})
 		defer cafeServer.Close()
 
 		opts := &SendTelemetryOptions{

@@ -15,23 +15,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// fakeViewerAPI implements cafe.ViewerAPI for testing.
+type fakeViewerAPI struct {
+	flags []*cafe.FeatureFlag
+}
+
+func (f *fakeViewerAPI) GetDetails(context.Context, *cafe.GetDetailsRequest) (*cafe.GetDetailsResponse, error) {
+	return nil, nil
+}
+
+func (f *fakeViewerAPI) GetFeatureFlags(_ context.Context, _ *cafe.GetFeatureFlagsRequest) (*cafe.GetFeatureFlagsResponse, error) {
+	return &cafe.GetFeatureFlagsResponse{FeatureFlags: f.flags}, nil
+}
+
 func newTestServer(t *testing.T, flags map[string]bool) *httptest.Server {
 	t.Helper()
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		type featureFlag struct {
-			Name      string `json:"name"`
-			IsEnabled bool   `json:"is_enabled"`
-		}
-		type resp struct {
-			FeatureFlags []featureFlag `json:"feature_flags"`
-		}
-		var response resp
-		for name, enabled := range flags {
-			response.FeatureFlags = append(response.FeatureFlags, featureFlag{Name: name, IsEnabled: enabled})
-		}
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(response)
-	}))
+	var protoFlags []*cafe.FeatureFlag
+	for name, enabled := range flags {
+		protoFlags = append(protoFlags, &cafe.FeatureFlag{Name: name, IsEnabled: enabled})
+	}
+	handler := cafe.NewViewerAPIServer(&fakeViewerAPI{flags: protoFlags})
+	mux := http.NewServeMux()
+	mux.Handle(handler.PathPrefix(), handler)
+	return httptest.NewServer(mux)
 }
 
 func TestGetFeatureFlags_freshCache(t *testing.T) {

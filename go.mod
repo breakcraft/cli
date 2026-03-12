@@ -48,6 +48,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
 	github.com/theupdateframework/go-tuf/v2 v2.4.1
+	github.com/twitchtv/twirp v8.1.3+incompatible
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	github.com/yuin/goldmark v1.7.16
 	github.com/zalando/go-keyring v0.2.6
