@@ -21,9 +21,9 @@ import (
 )
 
 const (
-	defaultCentralEndpointURL       = "https://central.github.com/api/usage/github-cli"
-	defaultFeatureFlagEndpointURL   = "https://clientapps.github.com"
-	telemetryFeatureFlag            = "gh_cli_telemetry"
+	defaultCentralEndpointURL     = "https://central.github.com/api/usage/github-cli"
+	defaultFeatureFlagEndpointURL = "https://clientapps.github.com"
+	telemetryFeatureFlag          = "gh_cli_telemetry"
 )
 
 type SendTelemetryOptions struct {
