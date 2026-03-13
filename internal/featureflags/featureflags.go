@@ -1,11 +1,12 @@
 // Package featureflags provides a cached feature flag client backed by the CAFE service.
 //
 // The intended lifecycle is:
-//  1. At startup, load defaults and overlay with cached flags (ReadCachedFlags).
-//  2. If the cache is stale (IsCacheStale), spawn an async refresh subprocess.
-//  3. The refresh subprocess fetches from CAFE and atomically writes the cache (Client.FetchAndCache).
-//  4. The current invocation uses the snapshot from step 1 — flags never change mid-command.
-//  5. The next invocation picks up the refreshed cache.
+//  1. At startup, call Fetch to load defaults overlaid with cached flags. If the
+//     cache is stale, Fetch spawns an async subprocess to refresh it for next time.
+//  2. The caller memoizes the returned snapshot — flags never change mid-command.
+//  3. The refresh subprocess calls Client.FetchAndCache to fetch from CAFE and
+//     atomically write the cache to disk.
+//  4. The next invocation picks up the refreshed cache.
 package featureflags
 
 import (
