@@ -3,6 +3,7 @@ package fetchfeatureflags
 import (
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -24,6 +25,7 @@ type FetchFeatureFlagsOptions struct {
 	Host                   string
 	User                   string
 	HTTPUnixSocket         string
+	FromCache              bool
 }
 
 func NewCmdFetchFeatureFlags(f *cmdutil.Factory) *cobra.Command {
@@ -31,6 +33,8 @@ func NewCmdFetchFeatureFlags(f *cmdutil.Factory) *cobra.Command {
 }
 
 func newCmdFetchFeatureFlags(f *cmdutil.Factory, runF func(*FetchFeatureFlagsOptions) error) *cobra.Command {
+	opts := &FetchFeatureFlagsOptions{}
+
 	cmd := &cobra.Command{
 		Use:    "fetch-feature-flags",
 		Short:  "Fetch feature flags from CAFE and update the local cache",
@@ -39,39 +43,52 @@ func newCmdFetchFeatureFlags(f *cmdutil.Factory, runF func(*FetchFeatureFlagsOpt
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := f.Config()
 			if err != nil {
-				return nil //nolint:nilerr // Best effort.
+				return err
 			}
 
 			// The parent process sets GH_HOST to the targeted host.
-			authCfg := cfg.Authentication()
-			host, _ := authCfg.DefaultHost()
-			token, _ := authCfg.ActiveToken(host)
-			user, _ := authCfg.ActiveUser(host)
-
-			opts := &FetchFeatureFlagsOptions{
-				FeatureFlagEndpointURL: cmp.Or(os.Getenv("FEATURE_FLAG_ENDPOINT_URL"), defaultFeatureFlagEndpointURL),
-				AuthToken:              token,
-				CacheDir:               cfg.CacheDir(),
-				Host:                   host,
-				User:                   user,
-				HTTPUnixSocket:         cfg.HTTPUnixSocket("").Value,
+			host := os.Getenv("GH_HOST")
+			if host == "" {
+				return errors.New("GH_HOST environment variable must be set")
 			}
+
+			authCfg := cfg.Authentication()
+			token, _ := authCfg.ActiveToken(host)
+			if token == "" {
+				return errors.New("expected to have a token")
+			}
+
+			user, err := authCfg.ActiveUser(host)
+			if err != nil {
+				return err
+			}
+
+			opts.FeatureFlagEndpointURL = cmp.Or(os.Getenv("FEATURE_FLAG_ENDPOINT_URL"), defaultFeatureFlagEndpointURL)
+			opts.AuthToken = token
+			opts.CacheDir = cfg.CacheDir()
+			opts.Host = host
+			opts.User = user
+			opts.HTTPUnixSocket = cfg.HTTPUnixSocket(host).Value
 
 			if runF != nil {
 				return runF(opts)
 			}
-			return runFetchFeatureFlags(opts)
+			return runFetchFeatureFlags(f, opts)
 		},
 	}
+
+	cmd.Flags().BoolVar(&opts.FromCache, "from-cache", false, "Print cached feature flags instead of fetching from remote")
 
 	cmdutil.DisableAuthCheck(cmd)
 
 	return cmd
 }
 
-func runFetchFeatureFlags(opts *FetchFeatureFlagsOptions) error {
-	if opts.AuthToken == "" {
-		return nil // No token — can't call CAFE.
+func runFetchFeatureFlags(f *cmdutil.Factory, opts *FetchFeatureFlagsOptions) error {
+	if opts.FromCache {
+		flags := featureflags.Fetch(opts.CacheDir, opts.Host, opts.User, "")
+		fmt.Fprintf(f.IOStreams.Out, "Host: %s\nUser: %s\nTelemetry: %v\n", opts.Host, opts.User, flags.Telemetry)
+		return nil
 	}
 
 	httpClient := &http.Client{
@@ -86,9 +103,7 @@ func runFetchFeatureFlags(opts *FetchFeatureFlagsOptions) error {
 	cafeClient := cafe.NewClient(httpClient, cafeOpts...)
 	ffClient := featureflags.NewClient(cafeClient, opts.CacheDir, opts.Host, opts.User)
 
-	// Best effort — all errors silently ignored.
-	_ = ffClient.FetchAndCache(context.Background())
-	return nil
+	return ffClient.FetchAndCache(context.Background())
 }
 
 type bearerTokenTransport struct {

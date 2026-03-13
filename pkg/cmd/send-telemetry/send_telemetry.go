@@ -34,18 +34,21 @@ func newCmdSendTelemetry(f *cmdutil.Factory, runF func(*SendTelemetryOptions) er
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := f.Config()
 			if err != nil {
-				return nil //nolint:nilerr // Best effort telemetry.
+				return err
 			}
 
 			payload, err := io.ReadAll(f.IOStreams.In)
 			if err != nil {
-				return nil //nolint:nilerr // Best effort telemetry.
+				return err
 			}
 
 			opts := &SendTelemetryOptions{
 				CentralEndpointURL: cmp.Or(os.Getenv("CENTRAL_ENDPOINT_URL"), defaultCentralEndpointURL),
 				PayloadJSON:        string(payload),
-				HTTPUnixSocket:     cfg.HTTPUnixSocket("").Value,
+				// This is a best effort to use a Unix Socket if configured. In most cases, if there is one configured
+				// it will be at the global level. However, since Central is not related to a specific host, we can't
+				// know that the socket we choose will work.
+				HTTPUnixSocket: cfg.HTTPUnixSocket("").Value,
 			}
 
 			if runF != nil {
@@ -68,13 +71,13 @@ func runSendTelemetry(opts *SendTelemetryOptions) error {
 
 	req, err := http.NewRequest(http.MethodPost, opts.CentralEndpointURL, strings.NewReader(opts.PayloadJSON))
 	if err != nil {
-		return nil // Best effort telemetry.
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil // Best effort telemetry.
+		return err
 	}
 	defer resp.Body.Close()
 

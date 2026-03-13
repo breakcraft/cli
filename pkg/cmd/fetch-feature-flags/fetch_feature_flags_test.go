@@ -3,9 +3,13 @@ package fetchfeatureflags
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/cli/cli/v2/internal/config"
 	"github.com/cli/cli/v2/internal/featureflags"
@@ -60,32 +64,12 @@ func TestRunFetchFeatureFlags_success(t *testing.T) {
 	}
 
 	// When I fetch feature flags
-	err := runFetchFeatureFlags(opts)
+	err := runFetchFeatureFlags(nil, opts)
 
 	// Then it should succeed and cache should be populated
 	require.NoError(t, err)
-	flags := featureflags.Fetch(cacheDir, "github.com", "testuser", "gh")
+	flags := featureflags.Fetch(cacheDir, "github.com", "testuser", "")
 	assert.True(t, flags.Telemetry)
-}
-
-func TestRunFetchFeatureFlags_noToken(t *testing.T) {
-	// Given no auth token
-	opts := &FetchFeatureFlagsOptions{
-		AuthToken: "",
-		CacheDir:  t.TempDir(),
-		Host:      "github.com",
-		User:      "testuser",
-	}
-
-	// When I fetch feature flags
-	err := runFetchFeatureFlags(opts)
-
-	// Then it should return nil (silent skip)
-	require.NoError(t, err)
-
-	// And no cache should be written
-	flags := featureflags.Fetch(opts.CacheDir, "github.com", "testuser", "gh")
-	assert.False(t, flags.Telemetry)
 }
 
 func TestRunFetchFeatureFlags_cafeError(t *testing.T) {
@@ -106,19 +90,56 @@ func TestRunFetchFeatureFlags_cafeError(t *testing.T) {
 	}
 
 	// When I fetch feature flags
-	err := runFetchFeatureFlags(opts)
+	err := runFetchFeatureFlags(nil, opts)
 
-	// Then it should still return nil (errors silently ignored)
+	// Then it should return an error
+	require.Error(t, err)
+}
+
+func TestRunFetchFeatureFlags_fromCache(t *testing.T) {
+	// Given a cache with telemetry enabled
+	cacheDir := t.TempDir()
+	cacheData, _ := json.Marshal(map[string]any{
+		"flags":      map[string]bool{"gh_cli_telemetry": true},
+		"fetched_at": time.Now().Format(time.RFC3339),
+	})
+	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "github.com-testuser-feature-flags.json"), cacheData, 0o600))
+
+	ios, _, stdout, _ := iostreams.Test()
+	f := &cmdutil.Factory{IOStreams: ios}
+
+	opts := &FetchFeatureFlagsOptions{
+		FromCache: true,
+		CacheDir:  cacheDir,
+		Host:      "github.com",
+		User:      "testuser",
+	}
+
+	// When I fetch feature flags with --from-cache
+	err := runFetchFeatureFlags(f, opts)
+
+	// Then it should print the cached flag state
 	require.NoError(t, err)
+	assert.Contains(t, stdout.String(), "Telemetry: true")
+	assert.Contains(t, stdout.String(), "Host: github.com")
 }
 
 func TestNewCmdFetchFeatureFlags(t *testing.T) {
-	// Given a factory
+	// Given GH_HOST is set and config has a token for that host
+	t.Setenv("GH_HOST", "github.com")
+
+	cfg := config.NewFromString(`
+hosts:
+  github.com:
+    oauth_token: test-token
+    user: testuser
+`)
+
 	ios, _, _, _ := iostreams.Test()
 	f := &cmdutil.Factory{
 		IOStreams: ios,
 		Config: func() (gh.Config, error) {
-			return config.NewBlankConfig(), nil
+			return cfg, nil
 		},
 	}
 
@@ -139,4 +160,7 @@ func TestNewCmdFetchFeatureFlags(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, gotOpts)
 	assert.Equal(t, defaultFeatureFlagEndpointURL, gotOpts.FeatureFlagEndpointURL)
+	assert.Equal(t, "github.com", gotOpts.Host)
+	assert.Equal(t, "test-token", gotOpts.AuthToken)
+	assert.Equal(t, "testuser", gotOpts.User)
 }
