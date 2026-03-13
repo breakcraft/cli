@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/cli/cli/v2/api"
@@ -21,7 +22,6 @@ import (
 	"github.com/cli/cli/v2/pkg/cmd/extension"
 	"github.com/cli/cli/v2/pkg/cmdutil"
 	"github.com/cli/cli/v2/pkg/iostreams"
-	o "github.com/cli/cli/v2/pkg/option"
 	xcolor "github.com/cli/go-gh/v2/pkg/x/color"
 	"github.com/spf13/cobra"
 )
@@ -276,31 +276,28 @@ func branchFunc(f *cmdutil.Factory) func() (string, error) {
 }
 
 func featureFlagsFunc(f *cmdutil.Factory) func(cmd *cobra.Command) (gh.FeatureFlagState, error) {
-	var flagStateSnapshot o.Option[gh.FeatureFlagState]
+	var once sync.Once
+	var flagState gh.FeatureFlagState
+	var flagErr error
 	return func(cmd *cobra.Command) (gh.FeatureFlagState, error) {
-		// If we have a snapshot in memory already, we're always going to return that
-		// to avoid reading from disk when a stale cache is being refreshed resulting in
-		// inconsistent flag values within the same command invocation.
-		if flagState, ok := flagStateSnapshot.Value(); ok {
-			return flagState, nil
-		}
+		once.Do(func() {
+			cfg, err := f.Config()
+			if err != nil {
+				flagErr = err
+				return
+			}
 
-		cfg, err := f.Config()
-		if err != nil {
-			return gh.FeatureFlagState{}, err
-		}
+			host := guessTargetHost(cmd, f)
+			user, err := cfg.Authentication().ActiveUser(host)
+			if err != nil {
+				flagErr = err
+				return
+			}
 
-		host := guessTargetHost(cmd, f)
-		user, err := cfg.Authentication().ActiveUser(host)
-		if err != nil {
-			return gh.FeatureFlagState{}, err
-		}
-
-		cacheDir := cfg.CacheDir()
-		flagState := featureflags.Fetch(cacheDir, host, user, f.Executable())
-		flagStateSnapshot = o.Some(flagState)
-
-		return flagState, nil
+			cacheDir := cfg.CacheDir()
+			flagState = featureflags.Fetch(cacheDir, host, user, f.Executable())
+		})
+		return flagState, flagErr
 	}
 }
 

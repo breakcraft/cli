@@ -115,9 +115,14 @@ func (c *Client) FetchAndCache(ctx context.Context) error {
 		return fmt.Errorf("fetching feature flags from CAFE: %w", err)
 	}
 
-	// Validate: ensure we got a non-nil map with expected keys before overwriting cache.
+	// Validate: ensure we got a non-nil map with all expected keys before overwriting cache.
 	if flags == nil {
 		return fmt.Errorf("CAFE returned nil flags")
+	}
+	for _, name := range allFlagNames {
+		if _, ok := flags[name]; !ok {
+			return fmt.Errorf("CAFE response missing expected flag: %s", name)
+		}
 	}
 
 	return writeCache(cachePath(c.cacheDir, c.host, c.user), &cache{

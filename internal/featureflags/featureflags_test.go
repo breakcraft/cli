@@ -222,3 +222,30 @@ func TestFetchAndCache_updatesCache(t *testing.T) {
 	flags := Fetch(cacheDir, "github.com", "testuser", "gh")
 	assert.True(t, flags.Telemetry)
 }
+
+func TestFetchAndCache_emptyResponsePreservesCache(t *testing.T) {
+	// Given a valid existing cache with telemetry enabled
+	cacheDir := t.TempDir()
+	writeTestCache(t, cacheDir, "github.com", "testuser", &cache{
+		Flags:     map[string]bool{"gh_cli_telemetry": true},
+		FetchedAt: time.Now().Add(-31 * time.Minute),
+	})
+
+	// And a CAFE server returning an empty flag set
+	server := newTestServer(t, map[string]bool{})
+	t.Cleanup(server.Close)
+
+	cafeClient := cafe.NewClient(server.Client(), cafe.WithBaseURL(server.URL))
+	client := NewClient(cafeClient, cacheDir, "github.com", "testuser")
+
+	// When I fetch and cache
+	err := client.FetchAndCache(context.Background())
+
+	// Then it should return an error about the missing flag
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "missing expected flag")
+
+	// And the prior cache should be preserved
+	flags := Fetch(cacheDir, "github.com", "testuser", "gh")
+	assert.True(t, flags.Telemetry)
+}

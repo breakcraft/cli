@@ -129,13 +129,12 @@ func handleUnixDomainSocket(socketPath string) http.RoundTripper {
 		return http.DefaultTransport
 	}
 
-	dial := func(network, addr string) (net.Conn, error) {
-		return net.Dial("unix", socketPath)
+	dialContext := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		return (&net.Dialer{}).DialContext(ctx, "unix", socketPath)
 	}
 
 	return &http.Transport{
-		Dial:              dial,
-		DialTLS:           dial,
+		DialContext:       dialContext,
 		DisableKeepAlives: true,
 	}
 }
