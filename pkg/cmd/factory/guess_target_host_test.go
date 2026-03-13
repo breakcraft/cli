@@ -23,21 +23,34 @@ func TestGuessTargetHost(t *testing.T) {
 		wantHost     string
 	}{
 		{
+			// Given a --repo flag with an explicit GHES host
+			// When I guess the target host
+			// Then it should return the GHES host from the flag
 			name:     "repo flag with host takes priority",
 			repoFlag: "ghes.example.com/org/repo",
 			wantHost: "ghes.example.com",
 		},
 		{
+			// Given a --repo flag without an explicit host
+			// When I guess the target host
+			// Then it should fall back to the default host
 			name:     "repo flag without host uses default",
 			repoFlag: "org/repo",
 			wantHost: "github.com",
 		},
 		{
+			// Given GH_REPO env var with an explicit GHES host
+			// When I guess the target host
+			// Then it should return the GHES host from the env var
 			name:      "GH_REPO env with host",
 			ghRepoEnv: "ghes.example.com/org/repo",
 			wantHost:  "ghes.example.com",
 		},
 		{
+			// Given a --hostname flag set to a GHES host
+			// And a BaseRepo pointing to github.com
+			// When I guess the target host
+			// Then it should return the hostname flag value (higher priority)
 			name:         "hostname flag takes priority over BaseRepo",
 			hostnameFlag: true,
 			hostname:     "ghes.example.com",
@@ -45,11 +58,17 @@ func TestGuessTargetHost(t *testing.T) {
 			wantHost:     "ghes.example.com",
 		},
 		{
+			// Given a git remote pointing to a GHES host
+			// When I guess the target host
+			// Then it should return the host from the git remote
 			name:     "BaseRepo host from git remote",
 			baseRepo: ghrepo.NewWithHost("org", "repo", "ghes.example.com"),
 			wantHost: "ghes.example.com",
 		},
 		{
+			// Given no flags, env vars, or git remotes
+			// When I guess the target host
+			// Then it should fall back to the default host
 			name:        "falls back to default host",
 			baseRepoErr: assert.AnError,
 			wantHost:    "github.com",
@@ -91,7 +110,7 @@ func TestGuessTargetHost(t *testing.T) {
 				},
 			}
 
-			got := GuessTargetHost(cmd, f)
+			got := guessTargetHost(cmd, f)
 			assert.Equal(t, tt.wantHost, got)
 		})
 	}

@@ -20,11 +20,11 @@ import (
 
 	"github.com/cli/cli/v2/internal/featureflags/cafe"
 	"github.com/cli/cli/v2/internal/gh"
+	ghauth "github.com/cli/go-gh/v2/pkg/auth"
 )
 
 const (
 	defaultCacheTTL = 30 * time.Minute
-	cacheVersion    = 1
 
 	flagTelemetry = "gh_cli_telemetry"
 )
@@ -34,7 +34,6 @@ var allFlagNames = []string{flagTelemetry}
 
 // cache represents the on-disk feature flag cache.
 type cache struct {
-	Version   int             `json:"version"`
 	Flags     map[string]bool `json:"flags"`
 	FetchedAt time.Time       `json:"fetched_at"`
 }
@@ -43,79 +42,44 @@ func cachePath(cacheDir, host, user string) string {
 	return filepath.Join(cacheDir, host+"-"+user+"-feature-flags.json")
 }
 
-// readCache reads and validates the cache file. Returns an error if the file
-// is missing, corrupt, or has an incompatible schema version.
-func readCache(path string) (cache, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return cache{}, err
-	}
-	var c cache
-	if err := json.Unmarshal(data, &c); err != nil {
-		return cache{}, err
-	}
-	if c.Version != cacheVersion {
-		return cache{}, fmt.Errorf("cache version mismatch: got %d, want %d", c.Version, cacheVersion)
-	}
-	return c, nil
-}
-
-// writeCache atomically writes the cache to disk using a temp file + rename.
-func writeCache(path string, c *cache) error {
-	data, err := json.Marshal(c)
-	if err != nil {
-		return err
-	}
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
-	tmp, err := os.CreateTemp(dir, ".feature-flags-*.json.tmp")
-	if err != nil {
-		return err
-	}
-	tmpPath := tmp.Name()
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmpPath)
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpPath)
-		return err
-	}
-	return os.Rename(tmpPath, path)
-}
-
 func fromMap(flags map[string]bool) gh.FeatureFlagState {
 	return gh.FeatureFlagState{
 		Telemetry: flags[flagTelemetry],
 	}
 }
 
-// ReadCachedFlags loads feature flags from the disk cache.
-// Returns defaults (all flags disabled) on any error: missing file, corrupt data,
-// schema version mismatch, etc.
-func ReadCachedFlags(cacheDir, host, user string) gh.FeatureFlagState {
-	c, err := readCache(cachePath(cacheDir, host, user))
-	if err != nil {
-		return gh.FeatureFlagState{}
+func Fetch(cacheDir, host, user string, executable string) gh.FeatureFlagState {
+	// Short-circuit fetching from CAFE for GHE hosts since they don't support telemetry — this avoids unnecessary CAFE calls and cache churn for GHE users.
+	if ghauth.IsEnterprise(host) {
+		return gh.FeatureFlagState{
+			Telemetry: false,
+		}
 	}
+
+	var defaultFlagState = gh.FeatureFlagState{
+		Telemetry: false,
+	}
+
+	// Read from the cache
+	data, err := os.ReadFile(cachePath(cacheDir, host, user))
+	if err != nil {
+		// If the cache is missing or unreadable, we'll return client side defaults, there's not much else to do.
+		return defaultFlagState
+	}
+
+	var c cache
+	if err := json.Unmarshal(data, &c); err != nil {
+		// If the cache is corrupt, we'll return client side defaults and ignore the cache.
+		return defaultFlagState
+	}
+
+	// If the cache is stale, then kick off a background refresh for the next invocation
+	if time.Since(c.FetchedAt) > defaultCacheTTL {
+		spawnFetchFeatureFlags(executable, host)
+	}
+
+	// Return the flags from cache even if stale, we want to avoid inconsistent flag values within the same command invocation. The next invocation will pick up the refreshed cache.
 	return fromMap(c.Flags)
-}
-
-// IsCacheStale reports whether the cache needs refreshing.
-// Returns true if the cache is missing, corrupt, wrong version, or older than the TTL.
-func IsCacheStale(cacheDir, host, user string) bool {
-	return isCacheStaleAt(cacheDir, host, user, time.Now())
-}
-
-func isCacheStaleAt(cacheDir, host, user string, now time.Time) bool {
-	c, err := readCache(cachePath(cacheDir, host, user))
-	if err != nil {
-		return true
-	}
-	return now.Sub(c.FetchedAt) >= defaultCacheTTL
 }
 
 // Client fetches feature flags from the CAFE service and writes them to the disk cache.
@@ -154,17 +118,43 @@ func (c *Client) FetchAndCache(ctx context.Context) error {
 	}
 
 	return writeCache(cachePath(c.cacheDir, c.host, c.user), &cache{
-		Version:   cacheVersion,
 		Flags:     flags,
 		FetchedAt: c.now(),
 	})
+}
+
+// writeCache atomically writes the cache to disk using a temp file + rename.
+func writeCache(path string, c *cache) error {
+	data, err := json.Marshal(c)
+	if err != nil {
+		return err
+	}
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(dir, ".feature-flags-*.json.tmp")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmp.Name()
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		os.Remove(tmpPath)
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpPath)
+		return err
+	}
+	return os.Rename(tmpPath, path)
 }
 
 // SpawnFetchFeatureFlags spawns a subprocess to fetch feature flags from CAFE.
 // The host parameter is passed via GH_HOST so the subprocess resolves the
 // correct auth token and cache scope for the targeted host.
 // All errors are silently ignored since this is best-effort.
-func SpawnFetchFeatureFlags(executable, host string) {
+func spawnFetchFeatureFlags(executable, host string) {
 	cmd := exec.Command(executable, "fetch-feature-flags")
 	cmd.Stdin = nil
 	cmd.Stdout = io.Discard
@@ -173,5 +163,5 @@ func SpawnFetchFeatureFlags(executable, host string) {
 	if err := cmd.Start(); err != nil {
 		return
 	}
-	_ = cmd.Process.Release() //nolint:errcheck // Best effort.
+	_ = cmd.Process.Release()
 }

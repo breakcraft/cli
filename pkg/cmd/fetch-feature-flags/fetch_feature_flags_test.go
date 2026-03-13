@@ -64,7 +64,7 @@ func TestRunFetchFeatureFlags_success(t *testing.T) {
 
 	// Then it should succeed and cache should be populated
 	require.NoError(t, err)
-	flags := featureflags.ReadCachedFlags(cacheDir, "github.com", "testuser")
+	flags := featureflags.Fetch(cacheDir, "github.com", "testuser", "gh")
 	assert.True(t, flags.Telemetry)
 }
 
@@ -84,7 +84,7 @@ func TestRunFetchFeatureFlags_noToken(t *testing.T) {
 	require.NoError(t, err)
 
 	// And no cache should be written
-	flags := featureflags.ReadCachedFlags(opts.CacheDir, "github.com", "testuser")
+	flags := featureflags.Fetch(opts.CacheDir, "github.com", "testuser", "gh")
 	assert.False(t, flags.Telemetry)
 }
 

@@ -86,40 +86,6 @@ func BaseRepoFunc(f *cmdutil.Factory) func() (ghrepo.Interface, error) {
 	}
 }
 
-// GuessTargetHost determines the GitHub host that the current command targets.
-// It checks sources in priority order: --repo flag / GH_REPO env, --hostname flag,
-// git remotes (via f.BaseRepo), and finally the configured default host.
-func GuessTargetHost(cmd *cobra.Command, f *cmdutil.Factory) string {
-	// 1. --repo flag or GH_REPO env var
-	override, _ := cmd.Flags().GetString("repo")
-	if override == "" {
-		override = os.Getenv("GH_REPO")
-	}
-	if override != "" {
-		if r, err := ghrepo.FromFullName(override); err == nil {
-			return r.RepoHost()
-		}
-	}
-
-	// 2. --hostname flag (used by auth, api, attestation commands)
-	if hostname, err := cmd.Flags().GetString("hostname"); err == nil && hostname != "" {
-		return hostname
-	}
-
-	// 3. Git remotes — f.BaseRepo is BaseRepoFunc (local, no network) in root's closure
-	if baseRepo, err := f.BaseRepo(); err == nil {
-		return baseRepo.RepoHost()
-	}
-
-	// 4. Default host from config / GH_HOST env
-	if cfg, err := f.Config(); err == nil {
-		host, _ := cfg.Authentication().DefaultHost()
-		return host
-	}
-
-	return "github.com"
-}
-
 // SmartBaseRepoFunc provides additional behaviour over BaseRepoFunc. Read the BaseRepoFunc
 // documentation for more information on how remotes are fetched and ordered.
 //
@@ -315,30 +281,61 @@ func featureFlagsFunc(f *cmdutil.Factory) func(cmd *cobra.Command) (gh.FeatureFl
 		// If we have a snapshot in memory already, we're always going to return that
 		// to avoid reading from disk when a stale cache is being refreshed resulting in
 		// inconsistent flag values within the same command invocation.
-		if val, ok := flagStateSnapshot.Value(); ok {
-			return val, nil
+		if flagState, ok := flagStateSnapshot.Value(); ok {
+			return flagState, nil
 		}
 
 		cfg, err := f.Config()
 		if err != nil {
-			return gh.FeatureFlagState{}, nil //nolint:nilerr // Best effort — return defaults if config fails.
+			return gh.FeatureFlagState{}, err
 		}
 
-		host := GuessTargetHost(cmd, f)
-		user, _ := cfg.Authentication().ActiveUser(host)
+		host := guessTargetHost(cmd, f)
+		user, err := cfg.Authentication().ActiveUser(host)
+		if err != nil {
+			return gh.FeatureFlagState{}, err
+		}
+
 		cacheDir := cfg.CacheDir()
+		flagState := featureflags.Fetch(cacheDir, host, user, f.Executable())
+		flagStateSnapshot = o.Some(flagState)
 
-		// Snapshot flags from cache — this is immutable for the rest of this invocation.
-		snapshot := featureflags.ReadCachedFlags(cacheDir, host, user)
-		flagStateSnapshot = o.Some(snapshot)
-
-		// If the cache is stale, spawn a background refresh for the next invocation.
-		if featureflags.IsCacheStale(cacheDir, host, user) {
-			featureflags.SpawnFetchFeatureFlags(f.Executable(), host)
-		}
-
-		return snapshot, nil
+		return flagState, nil
 	}
+}
+
+// guessTargetHost determines the GitHub host that the current command targets.
+// It checks sources in priority order: --repo flag / GH_REPO env, --hostname flag,
+// git remotes (via f.BaseRepo), and finally the configured default host.
+func guessTargetHost(cmd *cobra.Command, f *cmdutil.Factory) string {
+	// 1. --repo flag or GH_REPO env var
+	override, _ := cmd.Flags().GetString("repo")
+	if override == "" {
+		override = os.Getenv("GH_REPO")
+	}
+	if override != "" {
+		if r, err := ghrepo.FromFullName(override); err == nil {
+			return r.RepoHost()
+		}
+	}
+
+	// 2. --hostname flag (used by auth, api, attestation commands)
+	if hostname, err := cmd.Flags().GetString("hostname"); err == nil && hostname != "" {
+		return hostname
+	}
+
+	// 3. Git remotes — f.BaseRepo is BaseRepoFunc (local, no network) in root's closure
+	if baseRepo, err := f.BaseRepo(); err == nil {
+		return baseRepo.RepoHost()
+	}
+
+	// 4. Default host from config / GH_HOST env
+	if cfg, err := f.Config(); err == nil {
+		host, _ := cfg.Authentication().DefaultHost()
+		return host
+	}
+
+	return "github.com"
 }
 
 func extensionManager(f *cmdutil.Factory) *extension.Manager {

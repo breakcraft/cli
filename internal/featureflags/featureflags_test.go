@@ -51,113 +51,76 @@ func writeTestCache(t *testing.T, cacheDir, host, user string, c *cache) {
 	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, host+"-"+user+"-feature-flags.json"), data, 0o600))
 }
 
-// --- ReadCachedFlags tests ---
+// --- Fetch tests ---
 
-func TestReadCachedFlags_freshCache(t *testing.T) {
-	// Given a valid cache with telemetry enabled
+func TestFetch_freshCache(t *testing.T) {
+	// Given a cache with telemetry enabled that was fetched recently
 	cacheDir := t.TempDir()
 	writeTestCache(t, cacheDir, "github.com", "testuser", &cache{
-		Version:   cacheVersion,
 		Flags:     map[string]bool{"gh_cli_telemetry": true},
 		FetchedAt: time.Now().Add(-10 * time.Minute),
 	})
 
-	// When I read the cached flags
-	flags := ReadCachedFlags(cacheDir, "github.com", "testuser")
+	// When I fetch feature flags
+	flags := Fetch(cacheDir, "github.com", "testuser", "gh")
 
-	// Then telemetry should be enabled
+	// Then telemetry should be enabled from the cached value
 	assert.True(t, flags.Telemetry)
 }
 
-func TestReadCachedFlags_noCache(t *testing.T) {
+func TestFetch_noCache(t *testing.T) {
 	// Given no cache file exists
 	cacheDir := t.TempDir()
 
-	// When I read the cached flags
-	flags := ReadCachedFlags(cacheDir, "github.com", "testuser")
+	// When I fetch feature flags
+	flags := Fetch(cacheDir, "github.com", "testuser", "gh")
 
-	// Then it should return defaults (all disabled)
+	// Then it should return defaults (all flags disabled)
 	assert.False(t, flags.Telemetry)
 }
 
-func TestReadCachedFlags_corruptCache(t *testing.T) {
+func TestFetch_corruptCache(t *testing.T) {
 	// Given a corrupt cache file
 	cacheDir := t.TempDir()
 	path := filepath.Join(cacheDir, "github.com-testuser-feature-flags.json")
 	require.NoError(t, os.WriteFile(path, []byte("not json"), 0o600))
 
-	// When I read the cached flags
-	flags := ReadCachedFlags(cacheDir, "github.com", "testuser")
+	// When I fetch feature flags
+	flags := Fetch(cacheDir, "github.com", "testuser", "gh")
 
-	// Then it should return defaults (all disabled)
+	// Then it should return defaults (all flags disabled)
 	assert.False(t, flags.Telemetry)
 }
 
-func TestReadCachedFlags_wrongVersion(t *testing.T) {
-	// Given a cache with an incompatible schema version
+func TestFetch_enterpriseHost(t *testing.T) {
+	// Given any state (even a cache with telemetry enabled)
 	cacheDir := t.TempDir()
-	writeTestCache(t, cacheDir, "github.com", "testuser", &cache{
-		Version:   999,
+	writeTestCache(t, cacheDir, "ghes.example.com", "testuser", &cache{
 		Flags:     map[string]bool{"gh_cli_telemetry": true},
 		FetchedAt: time.Now(),
 	})
 
-	// When I read the cached flags
-	flags := ReadCachedFlags(cacheDir, "github.com", "testuser")
+	// When I fetch feature flags for an enterprise host
+	flags := Fetch(cacheDir, "ghes.example.com", "testuser", "gh")
 
-	// Then it should return defaults (version mismatch treated as invalid)
+	// Then telemetry should be disabled (enterprise hosts short-circuit)
 	assert.False(t, flags.Telemetry)
 }
 
-// --- IsCacheStale tests ---
-
-func TestIsCacheStale_noCache(t *testing.T) {
-	// Given no cache file exists
-	cacheDir := t.TempDir()
-
-	// Then the cache should be stale
-	assert.True(t, IsCacheStale(cacheDir, "github.com", "testuser"))
-}
-
-func TestIsCacheStale_freshCache(t *testing.T) {
-	// Given a cache fetched 10 minutes ago
-	cacheDir := t.TempDir()
-	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
-	writeTestCache(t, cacheDir, "github.com", "testuser", &cache{
-		Version:   cacheVersion,
-		Flags:     map[string]bool{"gh_cli_telemetry": true},
-		FetchedAt: now.Add(-10 * time.Minute),
-	})
-
-	// Then the cache should not be stale
-	assert.False(t, isCacheStaleAt(cacheDir, "github.com", "testuser", now))
-}
-
-func TestIsCacheStale_expiredCache(t *testing.T) {
-	// Given a cache fetched 31 minutes ago
-	cacheDir := t.TempDir()
-	now := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
-	writeTestCache(t, cacheDir, "github.com", "testuser", &cache{
-		Version:   cacheVersion,
-		Flags:     map[string]bool{"gh_cli_telemetry": true},
-		FetchedAt: now.Add(-31 * time.Minute),
-	})
-
-	// Then the cache should be stale
-	assert.True(t, isCacheStaleAt(cacheDir, "github.com", "testuser", now))
-}
-
-func TestIsCacheStale_wrongVersion(t *testing.T) {
-	// Given a cache with wrong schema version
+func TestFetch_staleCacheReturnsExistingFlags(t *testing.T) {
+	// Given a stale cache with telemetry enabled
 	cacheDir := t.TempDir()
 	writeTestCache(t, cacheDir, "github.com", "testuser", &cache{
-		Version:   999,
 		Flags:     map[string]bool{"gh_cli_telemetry": true},
-		FetchedAt: time.Now(),
+		FetchedAt: time.Now().Add(-31 * time.Minute),
 	})
 
-	// Then the cache should be stale (version mismatch)
-	assert.True(t, IsCacheStale(cacheDir, "github.com", "testuser"))
+	// When I fetch feature flags
+	flags := Fetch(cacheDir, "github.com", "testuser", "gh")
+
+	// Then it should return the stale cached value (not defaults)
+	// The background refresh is fire-and-forget and won't affect this invocation
+	assert.True(t, flags.Telemetry)
 }
 
 // --- FetchAndCache tests ---
@@ -177,11 +140,9 @@ func TestFetchAndCache_success(t *testing.T) {
 	// Then it should succeed
 	require.NoError(t, err)
 
-	// And the cache should be written with the correct version and flags
-	c, err := readCache(cachePath(cacheDir, "github.com", "testuser"))
-	require.NoError(t, err)
-	assert.Equal(t, cacheVersion, c.Version)
-	assert.Equal(t, true, c.Flags["gh_cli_telemetry"])
+	// And the cache should contain the enabled flag
+	flags := Fetch(cacheDir, "github.com", "testuser", "gh")
+	assert.True(t, flags.Telemetry)
 }
 
 func TestFetchAndCache_cafeError(t *testing.T) {
@@ -203,15 +164,14 @@ func TestFetchAndCache_cafeError(t *testing.T) {
 	require.Error(t, err)
 
 	// And no cache file should be written
-	_, err = os.Stat(cachePath(cacheDir, "github.com", "testuser"))
-	assert.ErrorIs(t, err, os.ErrNotExist)
+	_, statErr := os.Stat(cachePath(cacheDir, "github.com", "testuser"))
+	assert.ErrorIs(t, statErr, os.ErrNotExist)
 }
 
 func TestFetchAndCache_preservesPriorCacheOnError(t *testing.T) {
-	// Given a valid existing cache
+	// Given a valid existing cache with telemetry enabled
 	cacheDir := t.TempDir()
 	writeTestCache(t, cacheDir, "github.com", "testuser", &cache{
-		Version:   cacheVersion,
 		Flags:     map[string]bool{"gh_cli_telemetry": true},
 		FetchedAt: time.Now().Add(-31 * time.Minute),
 	})
@@ -233,16 +193,14 @@ func TestFetchAndCache_preservesPriorCacheOnError(t *testing.T) {
 	require.Error(t, err)
 
 	// And the prior cache should be preserved
-	c, err := readCache(cachePath(cacheDir, "github.com", "testuser"))
-	require.NoError(t, err)
-	assert.Equal(t, true, c.Flags["gh_cli_telemetry"])
+	flags := Fetch(cacheDir, "github.com", "testuser", "gh")
+	assert.True(t, flags.Telemetry)
 }
 
-func TestFetchAndCache_updatesStaleCache(t *testing.T) {
+func TestFetchAndCache_updatesCache(t *testing.T) {
 	// Given a stale cache with telemetry disabled
 	cacheDir := t.TempDir()
 	writeTestCache(t, cacheDir, "github.com", "testuser", &cache{
-		Version:   cacheVersion,
 		Flags:     map[string]bool{"gh_cli_telemetry": false},
 		FetchedAt: time.Now().Add(-31 * time.Minute),
 	})
@@ -261,23 +219,6 @@ func TestFetchAndCache_updatesStaleCache(t *testing.T) {
 	require.NoError(t, err)
 
 	// And the cache should be updated with the new value
-	c, err := readCache(cachePath(cacheDir, "github.com", "testuser"))
-	require.NoError(t, err)
-	assert.Equal(t, true, c.Flags["gh_cli_telemetry"])
-}
-
-func TestFetchAndCache_noCafeHitWhenNotCalled(t *testing.T) {
-	// Given a fresh cache
-	cacheDir := t.TempDir()
-	writeTestCache(t, cacheDir, "github.com", "testuser", &cache{
-		Version:   cacheVersion,
-		Flags:     map[string]bool{"gh_cli_telemetry": true},
-		FetchedAt: time.Now().Add(-10 * time.Minute),
-	})
-
-	// When I only read cached flags (no FetchAndCache call)
-	flags := ReadCachedFlags(cacheDir, "github.com", "testuser")
-
-	// Then telemetry should be enabled and no network was needed
+	flags := Fetch(cacheDir, "github.com", "testuser", "gh")
 	assert.True(t, flags.Telemetry)
 }
