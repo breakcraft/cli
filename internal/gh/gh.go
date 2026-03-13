@@ -182,3 +182,11 @@ type AliasConfig interface {
 	// All returns a map of all aliases to their corresponding expansions.
 	All() map[string]string
 }
+
+type FlagState struct {
+	Telemetry bool
+}
+
+type FeatureFlags interface {
+	Fetch() (FlagState, error)
+}

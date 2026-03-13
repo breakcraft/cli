@@ -48,7 +48,6 @@ import (
 	workflowCmd "github.com/cli/cli/v2/pkg/cmd/workflow"
 
 	"github.com/cli/cli/v2/internal/featureflags"
-	"github.com/cli/cli/v2/internal/ghrepo"
 	"github.com/cli/cli/v2/internal/telemetry"
 	"github.com/cli/cli/v2/pkg/cmdutil"
 	"github.com/google/shlex"
@@ -61,35 +60,6 @@ type AuthError struct {
 
 func (ae *AuthError) Error() string {
 	return ae.err.Error()
-}
-
-// resolveTargetHost determines the GitHub host that the current command targets.
-// It checks sources in priority order: --repo flag / GH_REPO env, --hostname flag,
-// git remotes (via f.BaseRepo), and finally the configured default host.
-func resolveTargetHost(cmd *cobra.Command, f *cmdutil.Factory, defaultHost string) string {
-	// 1. --repo flag or GH_REPO env var
-	override, _ := cmd.Flags().GetString("repo")
-	if override == "" {
-		override = os.Getenv("GH_REPO")
-	}
-	if override != "" {
-		if r, err := ghrepo.FromFullName(override); err == nil {
-			return r.RepoHost()
-		}
-	}
-
-	// 2. --hostname flag
-	if hostname, err := cmd.Flags().GetString("hostname"); err == nil && hostname != "" {
-		return hostname
-	}
-
-	// 3. Git remotes
-	if baseRepo, err := f.BaseRepo(); err == nil {
-		return baseRepo.RepoHost()
-	}
-
-	// 4. Default host from config / GH_HOST env
-	return defaultHost
 }
 
 func NewCmdRoot(f *cmdutil.Factory, version, buildDate string) (*cobra.Command, error) {
@@ -140,8 +110,7 @@ func NewCmdRoot(f *cmdutil.Factory, version, buildDate string) (*cobra.Command, 
 			}
 
 			// Snapshot flags from cache — this is immutable for the rest of this invocation.
-			defaultHost, _ := cfg.Authentication().DefaultHost()
-			host := resolveTargetHost(cmd, f, defaultHost)
+			host := factory.GuessTargetHost(cmd, f)
 			user, _ := cfg.Authentication().ActiveUser(host)
 			flagSnapshot = featureflags.ReadCachedFlags(cfg.CacheDir(), host, user)
 

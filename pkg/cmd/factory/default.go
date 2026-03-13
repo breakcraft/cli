@@ -21,6 +21,7 @@ import (
 	"github.com/cli/cli/v2/pkg/cmdutil"
 	"github.com/cli/cli/v2/pkg/iostreams"
 	xcolor "github.com/cli/go-gh/v2/pkg/x/color"
+	"github.com/spf13/cobra"
 )
 
 var ssoHeader string
@@ -80,6 +81,40 @@ func BaseRepoFunc(f *cmdutil.Factory) func() (ghrepo.Interface, error) {
 		}
 		return remotes[0], nil
 	}
+}
+
+// GuessTargetHost determines the GitHub host that the current command targets.
+// It checks sources in priority order: --repo flag / GH_REPO env, --hostname flag,
+// git remotes (via f.BaseRepo), and finally the configured default host.
+func GuessTargetHost(cmd *cobra.Command, f *cmdutil.Factory) string {
+	// 1. --repo flag or GH_REPO env var
+	override, _ := cmd.Flags().GetString("repo")
+	if override == "" {
+		override = os.Getenv("GH_REPO")
+	}
+	if override != "" {
+		if r, err := ghrepo.FromFullName(override); err == nil {
+			return r.RepoHost()
+		}
+	}
+
+	// 2. --hostname flag (used by auth, api, attestation commands)
+	if hostname, err := cmd.Flags().GetString("hostname"); err == nil && hostname != "" {
+		return hostname
+	}
+
+	// 3. Git remotes — f.BaseRepo is BaseRepoFunc (local, no network) in root's closure
+	if baseRepo, err := f.BaseRepo(); err == nil {
+		return baseRepo.RepoHost()
+	}
+
+	// 4. Default host from config / GH_HOST env
+	if cfg, err := f.Config(); err == nil {
+		host, _ := cfg.Authentication().DefaultHost()
+		return host
+	}
+
+	return "github.com"
 }
 
 // SmartBaseRepoFunc provides additional behaviour over BaseRepoFunc. Read the BaseRepoFunc

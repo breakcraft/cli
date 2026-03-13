@@ -1,15 +1,17 @@
-package root
+package factory
 
 import (
 	"testing"
 
+	"github.com/cli/cli/v2/internal/config"
+	"github.com/cli/cli/v2/internal/gh"
 	"github.com/cli/cli/v2/internal/ghrepo"
 	"github.com/cli/cli/v2/pkg/cmdutil"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestResolveTargetHost(t *testing.T) {
+func TestGuessTargetHost(t *testing.T) {
 	tests := []struct {
 		name         string
 		repoFlag     string
@@ -18,45 +20,38 @@ func TestResolveTargetHost(t *testing.T) {
 		ghRepoEnv    string
 		baseRepo     ghrepo.Interface
 		baseRepoErr  error
-		defaultHost  string
 		wantHost     string
 	}{
 		{
-			name:        "repo flag with host takes priority",
-			repoFlag:    "ghes.example.com/org/repo",
-			defaultHost: "github.com",
-			wantHost:    "ghes.example.com",
+			name:     "repo flag with host takes priority",
+			repoFlag: "ghes.example.com/org/repo",
+			wantHost: "ghes.example.com",
 		},
 		{
-			name:        "repo flag without host uses default",
-			repoFlag:    "org/repo",
-			defaultHost: "github.com",
-			wantHost:    "github.com",
+			name:     "repo flag without host uses default",
+			repoFlag: "org/repo",
+			wantHost: "github.com",
 		},
 		{
-			name:        "GH_REPO env with host",
-			ghRepoEnv:   "ghes.example.com/org/repo",
-			defaultHost: "github.com",
-			wantHost:    "ghes.example.com",
+			name:      "GH_REPO env with host",
+			ghRepoEnv: "ghes.example.com/org/repo",
+			wantHost:  "ghes.example.com",
 		},
 		{
 			name:         "hostname flag takes priority over BaseRepo",
 			hostnameFlag: true,
 			hostname:     "ghes.example.com",
 			baseRepo:     ghrepo.NewWithHost("org", "repo", "github.com"),
-			defaultHost:  "github.com",
 			wantHost:     "ghes.example.com",
 		},
 		{
-			name:        "BaseRepo host from git remote",
-			baseRepo:    ghrepo.NewWithHost("org", "repo", "ghes.example.com"),
-			defaultHost: "github.com",
-			wantHost:    "ghes.example.com",
+			name:     "BaseRepo host from git remote",
+			baseRepo: ghrepo.NewWithHost("org", "repo", "ghes.example.com"),
+			wantHost: "ghes.example.com",
 		},
 		{
 			name:        "falls back to default host",
 			baseRepoErr: assert.AnError,
-			defaultHost: "github.com",
 			wantHost:    "github.com",
 		},
 	}
@@ -91,9 +86,12 @@ func TestResolveTargetHost(t *testing.T) {
 					}
 					return nil, assert.AnError
 				},
+				Config: func() (gh.Config, error) {
+					return config.NewBlankConfig(), nil
+				},
 			}
 
-			got := resolveTargetHost(cmd, f, tt.defaultHost)
+			got := GuessTargetHost(cmd, f)
 			assert.Equal(t, tt.wantHost, got)
 		})
 	}
