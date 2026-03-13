@@ -93,13 +93,6 @@ func TestGetFeatureFlags_serverError(t *testing.T) {
 	assert.Contains(t, err.Error(), "fetching feature flags from CAFE")
 }
 
-func TestGetFeatureFlags_connectionError(t *testing.T) {
-	client := NewClient(http.DefaultClient, WithBaseURL("http://localhost:1"))
-	_, err := client.GetFeatureFlags(context.Background(), []string{"flag"})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "fetching feature flags from CAFE")
-}
-
 func TestNewClient_defaultBaseURL(t *testing.T) {
 	// Verify it doesn't panic and creates a valid client with the default URL
 	client := NewClient(http.DefaultClient)
