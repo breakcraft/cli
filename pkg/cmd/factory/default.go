@@ -291,10 +291,7 @@ func featureFlagsFunc(f *cmdutil.Factory) func(cmd *cobra.Command) (gh.FeatureFl
 		}
 
 		host := guessTargetHost(cmd, f)
-		user, err := cfg.Authentication().ActiveUser(host)
-		if err != nil {
-			return gh.FeatureFlagState{}, err
-		}
+		user, _ := cfg.Authentication().ActiveUser(host)
 
 		cacheDir := cfg.CacheDir()
 		flagState := featureflags.Fetch(cacheDir, host, user, f.Executable())

@@ -64,7 +64,9 @@ func Fetch(cacheDir, host, user string, executable string) gh.FeatureFlagState {
 	// Read from the cache
 	data, err := os.ReadFile(cachePath(cacheDir, host, user))
 	if err != nil {
-		// If the cache is missing or unreadable, we'll return client side defaults, there's not much else to do.
+		// If the cache is missing or unreadable, spawn a background fetch to populate it
+		// for the next invocation, and return client side defaults for now.
+		spawnFetchFeatureFlags(executable, host)
 		return defaultFlagState
 	}
 
