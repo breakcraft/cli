@@ -11,15 +11,15 @@ import (
 
 func TestResolveTargetHost(t *testing.T) {
 	tests := []struct {
-		name        string
-		repoFlag    string
+		name         string
+		repoFlag     string
 		hostnameFlag bool
-		hostname    string
-		ghRepoEnv   string
-		baseRepo    ghrepo.Interface
-		baseRepoErr error
-		defaultHost string
-		wantHost    string
+		hostname     string
+		ghRepoEnv    string
+		baseRepo     ghrepo.Interface
+		baseRepoErr  error
+		defaultHost  string
+		wantHost     string
 	}{
 		{
 			name:        "repo flag with host takes priority",
