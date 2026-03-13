@@ -18,14 +18,31 @@ type Client struct {
 	viewer ViewerAPI
 }
 
-// NewClient creates a CAFE client. If baseURL is empty, the default is used.
+// Option configures a CAFE client.
+type Option func(*clientConfig)
+
+type clientConfig struct {
+	baseURL string
+}
+
+// WithBaseURL overrides the default CAFE base URL.
+func WithBaseURL(url string) Option {
+	return func(c *clientConfig) {
+		c.baseURL = url
+	}
+}
+
+// NewClient creates a CAFE client.
 // The httpClient must already have authentication configured (e.g. Bearer token transport).
-func NewClient(httpClient *http.Client, baseURL string) *Client {
-	if baseURL == "" {
-		baseURL = defaultBaseURL
+func NewClient(httpClient *http.Client, opts ...Option) *Client {
+	cfg := &clientConfig{
+		baseURL: defaultBaseURL,
+	}
+	for _, opt := range opts {
+		opt(cfg)
 	}
 	return &Client{
-		viewer: NewViewerAPIProtobufClient(baseURL, httpClient),
+		viewer: NewViewerAPIProtobufClient(cfg.baseURL, httpClient),
 	}
 }
 

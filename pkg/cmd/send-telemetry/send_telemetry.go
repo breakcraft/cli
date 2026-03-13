@@ -143,7 +143,11 @@ func isTelemetryFlagEnabled(opts *SendTelemetryOptions) bool {
 		Transport: &bearerTokenTransport{token: opts.AuthToken, base: http.DefaultTransport},
 	}
 
-	cafeClient := cafe.NewClient(httpClient, opts.FeatureFlagEndpointURL)
+	var cafeOpts []cafe.Option
+	if opts.FeatureFlagEndpointURL != "" {
+		cafeOpts = append(cafeOpts, cafe.WithBaseURL(opts.FeatureFlagEndpointURL))
+	}
+	cafeClient := cafe.NewClient(httpClient, cafeOpts...)
 	ffClient := featureflags.NewClient(cafeClient, opts.CacheDir, opts.Host, opts.User)
 
 	ff, err := ffClient.Get(context.Background())

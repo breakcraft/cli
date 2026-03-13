@@ -53,7 +53,7 @@ func TestGet_freshCache(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "github.com-testuser-feature-flags.json"), data, 0o600))
 
 	// No server needed — cache should be used
-	cafeClient := cafe.NewClient(http.DefaultClient, "http://localhost:1")
+	cafeClient := cafe.NewClient(http.DefaultClient, cafe.WithBaseURL("http://localhost:1"))
 	client := NewClient(cafeClient, cacheDir, "github.com", "testuser")
 	client.now = func() time.Time { return now }
 
@@ -77,7 +77,7 @@ func TestGet_staleCache(t *testing.T) {
 	server := newTestServer(t, map[string]bool{"gh_cli_telemetry": true})
 	defer server.Close()
 
-	cafeClient := cafe.NewClient(server.Client(), server.URL)
+	cafeClient := cafe.NewClient(server.Client(), cafe.WithBaseURL(server.URL))
 	client := NewClient(cafeClient, cacheDir, "github.com", "testuser")
 	client.now = func() time.Time { return now }
 
@@ -92,7 +92,7 @@ func TestGet_noCache(t *testing.T) {
 	server := newTestServer(t, map[string]bool{"gh_cli_telemetry": true})
 	defer server.Close()
 
-	cafeClient := cafe.NewClient(server.Client(), server.URL)
+	cafeClient := cafe.NewClient(server.Client(), cafe.WithBaseURL(server.URL))
 	client := NewClient(cafeClient, cacheDir, "github.com", "testuser")
 
 	ff, err := client.Get(context.Background())
@@ -122,7 +122,7 @@ func TestGet_cacheMissingRequestedFlag(t *testing.T) {
 	server := newTestServer(t, map[string]bool{"gh_cli_telemetry": true})
 	defer server.Close()
 
-	cafeClient := cafe.NewClient(server.Client(), server.URL)
+	cafeClient := cafe.NewClient(server.Client(), cafe.WithBaseURL(server.URL))
 	client := NewClient(cafeClient, cacheDir, "github.com", "testuser")
 	client.now = func() time.Time { return now }
 
@@ -134,7 +134,7 @@ func TestGet_cacheMissingRequestedFlag(t *testing.T) {
 func TestGet_cafeError(t *testing.T) {
 	cacheDir := t.TempDir()
 
-	cafeClient := cafe.NewClient(http.DefaultClient, "http://localhost:1")
+	cafeClient := cafe.NewClient(http.DefaultClient, cafe.WithBaseURL("http://localhost:1"))
 	client := NewClient(cafeClient, cacheDir, "github.com", "testuser")
 
 	_, err := client.Get(context.Background())
@@ -148,7 +148,7 @@ func TestGet_telemetryDisabled(t *testing.T) {
 	server := newTestServer(t, map[string]bool{"gh_cli_telemetry": false})
 	defer server.Close()
 
-	cafeClient := cafe.NewClient(server.Client(), server.URL)
+	cafeClient := cafe.NewClient(server.Client(), cafe.WithBaseURL(server.URL))
 	client := NewClient(cafeClient, cacheDir, "github.com", "testuser")
 
 	ff, err := client.Get(context.Background())

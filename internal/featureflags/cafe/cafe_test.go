@@ -74,7 +74,7 @@ func TestGetFeatureFlags(t *testing.T) {
 			server := newTestServer(t, &fakeViewerAPI{flags: tt.flags})
 			defer server.Close()
 
-			client := NewClient(server.Client(), server.URL)
+			client := NewClient(server.Client(), WithBaseURL(server.URL))
 			flags, err := client.GetFeatureFlags(context.Background(), tt.flagNames)
 
 			require.NoError(t, err)
@@ -87,14 +87,14 @@ func TestGetFeatureFlags_serverError(t *testing.T) {
 	server := newTestServer(t, &fakeViewerAPI{stubbedErr: assert.AnError})
 	defer server.Close()
 
-	client := NewClient(server.Client(), server.URL)
+	client := NewClient(server.Client(), WithBaseURL(server.URL))
 	_, err := client.GetFeatureFlags(context.Background(), []string{"flag"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "fetching feature flags from CAFE")
 }
 
 func TestGetFeatureFlags_connectionError(t *testing.T) {
-	client := NewClient(http.DefaultClient, "http://localhost:1")
+	client := NewClient(http.DefaultClient, WithBaseURL("http://localhost:1"))
 	_, err := client.GetFeatureFlags(context.Background(), []string{"flag"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "fetching feature flags from CAFE")
@@ -102,6 +102,6 @@ func TestGetFeatureFlags_connectionError(t *testing.T) {
 
 func TestNewClient_defaultBaseURL(t *testing.T) {
 	// Verify it doesn't panic and creates a valid client with the default URL
-	client := NewClient(http.DefaultClient, "")
+	client := NewClient(http.DefaultClient)
 	assert.NotNil(t, client.viewer)
 }
