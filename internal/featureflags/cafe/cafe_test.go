@@ -72,7 +72,7 @@ func TestGetFeatureFlags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := newTestServer(t, &fakeViewerAPI{flags: tt.flags})
-			defer server.Close()
+			t.Cleanup(server.Close)
 
 			client := NewClient(server.Client(), WithBaseURL(server.URL))
 			flags, err := client.GetFeatureFlags(context.Background(), tt.flagNames)
@@ -85,7 +85,7 @@ func TestGetFeatureFlags(t *testing.T) {
 
 func TestGetFeatureFlags_serverError(t *testing.T) {
 	server := newTestServer(t, &fakeViewerAPI{stubbedErr: assert.AnError})
-	defer server.Close()
+	t.Cleanup(server.Close)
 
 	client := NewClient(server.Client(), WithBaseURL(server.URL))
 	_, err := client.GetFeatureFlags(context.Background(), []string{"flag"})
