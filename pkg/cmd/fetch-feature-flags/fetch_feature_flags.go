@@ -13,12 +13,14 @@ import (
 	"github.com/cli/cli/v2/internal/featureflags"
 	"github.com/cli/cli/v2/internal/featureflags/cafe"
 	"github.com/cli/cli/v2/pkg/cmdutil"
+	"github.com/cli/cli/v2/pkg/iostreams"
 	"github.com/spf13/cobra"
 )
 
 const defaultFeatureFlagEndpointURL = "https://clientapps.github.com"
 
 type FetchFeatureFlagsOptions struct {
+	IO                     *iostreams.IOStreams
 	FeatureFlagEndpointURL string
 	AuthToken              string
 	CacheDir               string
@@ -33,7 +35,9 @@ func NewCmdFetchFeatureFlags(f *cmdutil.Factory) *cobra.Command {
 }
 
 func newCmdFetchFeatureFlags(f *cmdutil.Factory, runF func(*FetchFeatureFlagsOptions) error) *cobra.Command {
-	opts := &FetchFeatureFlagsOptions{}
+	opts := &FetchFeatureFlagsOptions{
+		IO: f.IOStreams,
+	}
 
 	cmd := &cobra.Command{
 		Use:    "fetch-feature-flags",
@@ -73,21 +77,19 @@ func newCmdFetchFeatureFlags(f *cmdutil.Factory, runF func(*FetchFeatureFlagsOpt
 			if runF != nil {
 				return runF(opts)
 			}
-			return runFetchFeatureFlags(f, opts)
+			return runFetchFeatureFlags(opts)
 		},
 	}
 
 	cmd.Flags().BoolVar(&opts.FromCache, "from-cache", false, "Print cached feature flags instead of fetching from remote")
 
-	cmdutil.DisableAuthCheck(cmd)
-
 	return cmd
 }
 
-func runFetchFeatureFlags(f *cmdutil.Factory, opts *FetchFeatureFlagsOptions) error {
+func runFetchFeatureFlags(opts *FetchFeatureFlagsOptions) error {
 	if opts.FromCache {
 		flags := featureflags.Fetch(opts.CacheDir, opts.Host, opts.User, "")
-		fmt.Fprintf(f.IOStreams.Out, "Host: %s\nUser: %s\nTelemetry: %v\n", opts.Host, opts.User, flags.Telemetry)
+		fmt.Fprintf(opts.IO.Out, "%+v", flags)
 		return nil
 	}
 

@@ -64,7 +64,7 @@ func TestRunFetchFeatureFlags_success(t *testing.T) {
 	}
 
 	// When I fetch feature flags
-	err := runFetchFeatureFlags(nil, opts)
+	err := runFetchFeatureFlags(opts)
 
 	// Then it should succeed and cache should be populated
 	require.NoError(t, err)
@@ -90,7 +90,7 @@ func TestRunFetchFeatureFlags_cafeError(t *testing.T) {
 	}
 
 	// When I fetch feature flags
-	err := runFetchFeatureFlags(nil, opts)
+	err := runFetchFeatureFlags(opts)
 
 	// Then it should return an error
 	require.Error(t, err)
@@ -106,9 +106,8 @@ func TestRunFetchFeatureFlags_fromCache(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "github.com-testuser-feature-flags.json"), cacheData, 0o600))
 
 	ios, _, stdout, _ := iostreams.Test()
-	f := &cmdutil.Factory{IOStreams: ios}
-
 	opts := &FetchFeatureFlagsOptions{
+		IO:        ios,
 		FromCache: true,
 		CacheDir:  cacheDir,
 		Host:      "github.com",
@@ -116,12 +115,11 @@ func TestRunFetchFeatureFlags_fromCache(t *testing.T) {
 	}
 
 	// When I fetch feature flags with --from-cache
-	err := runFetchFeatureFlags(f, opts)
+	err := runFetchFeatureFlags(opts)
 
 	// Then it should print the cached flag state
 	require.NoError(t, err)
-	assert.Contains(t, stdout.String(), "Telemetry: true")
-	assert.Contains(t, stdout.String(), "Host: github.com")
+	assert.Contains(t, stdout.String(), "Telemetry:true")
 }
 
 func TestNewCmdFetchFeatureFlags(t *testing.T) {
