@@ -12,11 +12,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
 	"github.com/cli/cli/v2/internal/featureflags/cafe"
+	"github.com/cli/cli/v2/internal/gh"
 )
 
 const (
@@ -28,12 +31,6 @@ const (
 
 // allFlagNames is the list of all flag names we request from CAFE.
 var allFlagNames = []string{flagTelemetry}
-
-// FlagState holds the resolved state of all feature flags.
-// Zero value has all flags disabled, which is the safe default.
-type FlagState struct {
-	Telemetry bool
-}
 
 // cache represents the on-disk feature flag cache.
 type cache struct {
@@ -90,8 +87,8 @@ func writeCache(path string, c *cache) error {
 	return os.Rename(tmpPath, path)
 }
 
-func fromMap(flags map[string]bool) FlagState {
-	return FlagState{
+func fromMap(flags map[string]bool) gh.FeatureFlagState {
+	return gh.FeatureFlagState{
 		Telemetry: flags[flagTelemetry],
 	}
 }
@@ -99,10 +96,10 @@ func fromMap(flags map[string]bool) FlagState {
 // ReadCachedFlags loads feature flags from the disk cache.
 // Returns defaults (all flags disabled) on any error: missing file, corrupt data,
 // schema version mismatch, etc.
-func ReadCachedFlags(cacheDir, host, user string) FlagState {
+func ReadCachedFlags(cacheDir, host, user string) gh.FeatureFlagState {
 	c, err := readCache(cachePath(cacheDir, host, user))
 	if err != nil {
-		return FlagState{}
+		return gh.FeatureFlagState{}
 	}
 	return fromMap(c.Flags)
 }
@@ -161,4 +158,20 @@ func (c *Client) FetchAndCache(ctx context.Context) error {
 		Flags:     flags,
 		FetchedAt: c.now(),
 	})
+}
+
+// SpawnFetchFeatureFlags spawns a subprocess to fetch feature flags from CAFE.
+// The host parameter is passed via GH_HOST so the subprocess resolves the
+// correct auth token and cache scope for the targeted host.
+// All errors are silently ignored since this is best-effort.
+func SpawnFetchFeatureFlags(executable, host string) {
+	cmd := exec.Command(executable, "fetch-feature-flags")
+	cmd.Stdin = nil
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	cmd.Env = append(os.Environ(), "GH_HOST="+host)
+	if err := cmd.Start(); err != nil {
+		return
+	}
+	_ = cmd.Process.Release() //nolint:errcheck // Best effort.
 }

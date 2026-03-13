@@ -144,22 +144,6 @@ func SpawnSendTelemetry(executable, payloadJSON string) {
 	_ = cmd.Process.Release() //nolint:errcheck // Best effort telemetry.
 }
 
-// SpawnFetchFeatureFlags spawns a subprocess to fetch feature flags from CAFE.
-// The host parameter is passed via GH_HOST so the subprocess resolves the
-// correct auth token and cache scope for the targeted host.
-// All errors are silently ignored since this is best-effort.
-func SpawnFetchFeatureFlags(executable, host string) {
-	cmd := exec.Command(executable, "fetch-feature-flags")
-	cmd.Stdin = nil
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
-	cmd.Env = append(os.Environ(), "GH_HOST="+host)
-	if err := cmd.Start(); err != nil {
-		return
-	}
-	_ = cmd.Process.Release() //nolint:errcheck // Best effort.
-}
-
 const telemetryAnnotation = "telemetry"
 
 // EnableTelemetry opts a command into telemetry collection.

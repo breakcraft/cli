@@ -47,7 +47,6 @@ import (
 	versionCmd "github.com/cli/cli/v2/pkg/cmd/version"
 	workflowCmd "github.com/cli/cli/v2/pkg/cmd/workflow"
 
-	"github.com/cli/cli/v2/internal/featureflags"
 	"github.com/cli/cli/v2/internal/telemetry"
 	"github.com/cli/cli/v2/pkg/cmdutil"
 	"github.com/google/shlex"
@@ -68,10 +67,6 @@ func NewCmdRoot(f *cmdutil.Factory, version, buildDate string) (*cobra.Command, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to read configuration: %s\n", err)
 	}
-
-	// flagSnapshot holds the immutable feature flag state for this invocation,
-	// set during PersistentPreRunE and read during PersistentPostRun.
-	var flagSnapshot featureflags.FlagState
 
 	cmd := &cobra.Command{
 		Use:   "gh <command> <subcommand> [flags]",
@@ -97,26 +92,10 @@ func NewCmdRoot(f *cmdutil.Factory, version, buildDate string) (*cobra.Command, 
 				return &AuthError{}
 			}
 
-			if !telemetry.IsTelemetryEnabled(cmd) {
-				return nil
-			}
-
-			var configNoTelemetry string
-			if entry := cfg.GetOrDefault("", "no_telemetry"); entry.IsSome() {
-				configNoTelemetry = entry.Unwrap().Value
-			}
-			if telemetry.IsOptedOut(configNoTelemetry) {
-				return nil
-			}
-
-			// Snapshot flags from cache — this is immutable for the rest of this invocation.
-			host := factory.GuessTargetHost(cmd, f)
-			user, _ := cfg.Authentication().ActiveUser(host)
-			flagSnapshot = featureflags.ReadCachedFlags(cfg.CacheDir(), host, user)
-
-			// If the cache is stale, spawn a background refresh for the next invocation.
-			if featureflags.IsCacheStale(cfg.CacheDir(), host, user) {
-				telemetry.SpawnFetchFeatureFlags(f.Executable(), host)
+			if telemetry.IsTelemetryEnabled(cmd) {
+				// Snapshot feature flags — this triggers a background refresh if stale.
+				// The snapshot is memoized in the factory for the rest of this invocation.
+				_, _ = f.FeatureFlags(cmd)
 			}
 
 			return nil
@@ -134,8 +113,9 @@ func NewCmdRoot(f *cmdutil.Factory, version, buildDate string) (*cobra.Command, 
 				return
 			}
 
-			// Use the snapshot from PreRunE — never re-read the cache.
-			if !flagSnapshot.Telemetry {
+			// Use the memoized snapshot from the factory — never re-reads cache.
+			flagState, _ := f.FeatureFlags(cmd)
+			if !flagState.Telemetry {
 				return
 			}
 

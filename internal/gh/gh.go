@@ -183,10 +183,6 @@ type AliasConfig interface {
 	All() map[string]string
 }
 
-type FlagState struct {
+type FeatureFlagState struct {
 	Telemetry bool
-}
-
-type FeatureFlags interface {
-	Fetch() (FlagState, error)
 }

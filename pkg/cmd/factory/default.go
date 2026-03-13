@@ -14,12 +14,14 @@ import (
 	"github.com/cli/cli/v2/git"
 	"github.com/cli/cli/v2/internal/browser"
 	"github.com/cli/cli/v2/internal/config"
+	"github.com/cli/cli/v2/internal/featureflags"
 	"github.com/cli/cli/v2/internal/gh"
 	"github.com/cli/cli/v2/internal/ghrepo"
 	"github.com/cli/cli/v2/internal/prompter"
 	"github.com/cli/cli/v2/pkg/cmd/extension"
 	"github.com/cli/cli/v2/pkg/cmdutil"
 	"github.com/cli/cli/v2/pkg/iostreams"
+	o "github.com/cli/cli/v2/pkg/option"
 	xcolor "github.com/cli/go-gh/v2/pkg/x/color"
 	"github.com/spf13/cobra"
 )
@@ -44,6 +46,7 @@ func New(appVersion string) *cmdutil.Factory {
 	f.Browser = newBrowser(f)                              // Depends on Config, and IOStreams
 	f.ExtensionManager = extensionManager(f)               // Depends on Config, HttpClient, and IOStreams
 	f.Branch = branchFunc(f)                               // Depends on GitClient
+	f.FeatureFlags = featureFlagsFunc(f)
 
 	return f
 }
@@ -303,6 +306,38 @@ func branchFunc(f *cmdutil.Factory) func() (string, error) {
 			return "", fmt.Errorf("could not determine current branch: %w", err)
 		}
 		return currentBranch, nil
+	}
+}
+
+func featureFlagsFunc(f *cmdutil.Factory) func(cmd *cobra.Command) (gh.FeatureFlagState, error) {
+	var flagStateSnapshot o.Option[gh.FeatureFlagState]
+	return func(cmd *cobra.Command) (gh.FeatureFlagState, error) {
+		// If we have a snapshot in memory already, we're always going to return that
+		// to avoid reading from disk when a stale cache is being refreshed resulting in
+		// inconsistent flag values within the same command invocation.
+		if val, ok := flagStateSnapshot.Value(); ok {
+			return val, nil
+		}
+
+		cfg, err := f.Config()
+		if err != nil {
+			return gh.FeatureFlagState{}, nil //nolint:nilerr // Best effort — return defaults if config fails.
+		}
+
+		host := GuessTargetHost(cmd, f)
+		user, _ := cfg.Authentication().ActiveUser(host)
+		cacheDir := cfg.CacheDir()
+
+		// Snapshot flags from cache — this is immutable for the rest of this invocation.
+		snapshot := featureflags.ReadCachedFlags(cacheDir, host, user)
+		flagStateSnapshot = o.Some(snapshot)
+
+		// If the cache is stale, spawn a background refresh for the next invocation.
+		if featureflags.IsCacheStale(cacheDir, host, user) {
+			featureflags.SpawnFetchFeatureFlags(f.Executable(), host)
+		}
+
+		return snapshot, nil
 	}
 }
 

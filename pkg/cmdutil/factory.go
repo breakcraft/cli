@@ -14,6 +14,7 @@ import (
 	"github.com/cli/cli/v2/internal/prompter"
 	"github.com/cli/cli/v2/pkg/extensions"
 	"github.com/cli/cli/v2/pkg/iostreams"
+	"github.com/spf13/cobra"
 )
 
 type Factory struct {
@@ -35,6 +36,8 @@ type Factory struct {
 	// client needs to specify the headers itself (e.g. during login).
 	PlainHttpClient func() (*http.Client, error)
 	Remotes         func() (context.Remotes, error)
+
+	FeatureFlags func(cmd *cobra.Command) (gh.FeatureFlagState, error)
 }
 
 // Executable is the path to the currently invoked binary
