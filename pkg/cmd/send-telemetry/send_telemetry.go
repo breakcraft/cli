@@ -2,6 +2,8 @@ package sendtelemetry
 
 import (
 	"cmp"
+	"context"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -29,16 +31,21 @@ func newCmdSendTelemetry(f *cmdutil.Factory, runF func(*SendTelemetryOptions) er
 		Use:    "send-telemetry",
 		Short:  "Send telemetry event to Central",
 		Hidden: true,
-		Args:   cobra.ExactArgs(1),
+		Args:   cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := f.Config()
 			if err != nil {
 				return err
 			}
 
+			payloadJSON, err := io.ReadAll(cmd.InOrStdin())
+			if err != nil {
+				return err
+			}
+
 			opts := &SendTelemetryOptions{
 				CentralEndpointURL: cmp.Or(os.Getenv("CENTRAL_ENDPOINT_URL"), defaultCentralEndpointURL),
-				PayloadJSON:        args[0],
+				PayloadJSON:        string(payloadJSON),
 				// This is a best effort to use a Unix Socket if configured. In most cases, if there is one configured
 				// it will be at the global level. However, since Central is not related to a specific host, we can't
 				// know that the socket we choose will work.
@@ -83,13 +90,12 @@ func handleUnixDomainSocket(socketPath string) http.RoundTripper {
 		return http.DefaultTransport
 	}
 
-	dial := func(network, addr string) (net.Conn, error) {
-		return net.Dial("unix", socketPath)
+	dialContext := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		return (&net.Dialer{}).DialContext(ctx, "unix", socketPath)
 	}
 
 	return &http.Transport{
-		Dial:              dial,
-		DialTLS:           dial,
+		DialContext:       dialContext,
 		DisableKeepAlives: true,
 	}
 }

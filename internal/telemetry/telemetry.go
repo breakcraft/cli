@@ -101,7 +101,7 @@ type Dimensions struct {
 }
 
 // BuildEventPayload constructs the event payload for tracking a command invocation.
-// Returns nil if device ID cannot be determined.
+// Returns an error if the device ID cannot be determined.
 func BuildEventPayload(cmd *cobra.Command, version string) (Event, error) {
 	deviceID, err := deviceIDFunc()
 	if err != nil {
@@ -127,17 +127,37 @@ func BuildEventPayload(cmd *cobra.Command, version string) (Event, error) {
 	}, nil
 }
 
-// SpawnSendTelemetry spawns a subprocess to send telemetry via stdin.
+// SpawnSendTelemetry spawns a subprocess to send telemetry via an os.Pipe.
 // All errors are silently ignored since telemetry is best-effort.
 func SpawnSendTelemetry(executable, payloadJSON string) {
-	cmd := exec.Command(executable, "send-telemetry", payloadJSON)
-	cmd.Stdin = nil
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
-	if err := cmd.Start(); err != nil {
+	pr, pw, err := os.Pipe()
+	if err != nil {
 		return
 	}
+
+	cmd := exec.Command(executable, "send-telemetry")
+	cmd.Stdin = pr
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+
+	// Write the payload before starting the process so it's ready on stdin.
+	if _, err := pw.WriteString(payloadJSON); err != nil {
+		pw.Close()
+		pr.Close()
+		return
+	}
+	pw.Close()
+
+	if err := cmd.Start(); err != nil {
+		pr.Close()
+		return
+	}
+	pr.Close()
 	_ = cmd.Process.Release() //nolint:errcheck // Best effort telemetry.
+	// Currently, we do not detach the child process session (e.g. via syscall.SysProcAttr{Setsid: true}).
+	// This means that if the parent is terminated via SIGINT (Ctrl-C), the child also terminates rather than orphaning.
+	// We may change this in future, but it requires additional platform-specific handling and testing,
+	// so for now we accept the limitation that telemetry may not be sent on interrupted commands.
 }
 
 const telemetryAnnotation = "telemetry"

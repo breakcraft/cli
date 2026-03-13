@@ -72,7 +72,8 @@ func Fetch(cacheDir, host, user string, executable string) gh.FeatureFlagState {
 
 	var c cache
 	if err := json.Unmarshal(data, &c); err != nil {
-		// If the cache is corrupt, we'll return client side defaults and ignore the cache.
+		// If the cache is corrupt, spawn a background fetch to repair it and return defaults.
+		spawnFetchFeatureFlags(executable, host)
 		return defaultFlagState
 	}
 
@@ -158,7 +159,7 @@ func writeCache(path string, c *cache) error {
 	return os.Rename(tmpPath, path)
 }
 
-// SpawnFetchFeatureFlags spawns a subprocess to fetch feature flags from CAFE.
+// spawnFetchFeatureFlags spawns a subprocess to fetch feature flags from CAFE.
 // The host parameter is passed via GH_HOST so the subprocess resolves the
 // correct auth token and cache scope for the targeted host.
 // All errors are silently ignored since this is best-effort.

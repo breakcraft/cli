@@ -1,11 +1,11 @@
 package sendtelemetry
 
 import (
-	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/cli/cli/v2/internal/config"
@@ -79,10 +79,10 @@ func TestNewCmdSendTelemetry(t *testing.T) {
 				gotOpts = opts
 				return nil
 			})
-			cmd.SetArgs([]string{tt.payload})
-			cmd.SetIn(&bytes.Buffer{})
-			cmd.SetOut(&bytes.Buffer{})
-			cmd.SetErr(&bytes.Buffer{})
+			cmd.SetArgs([]string{})
+			cmd.SetIn(strings.NewReader(tt.payload))
+			cmd.SetOut(io.Discard)
+			cmd.SetErr(io.Discard)
 
 			_, err := cmd.ExecuteC()
 			require.NoError(t, err)

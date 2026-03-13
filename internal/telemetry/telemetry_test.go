@@ -30,10 +30,6 @@ func stubStateDir(dir string) func() {
 	return func() { stateDirFunc = orig }
 }
 
-func TestBuildEventPayloadNilCommand(t *testing.T) {
-	// BuildEventPayload no longer accepts nil cmd — that case is handled by the caller.
-}
-
 func TestBuildEventPayloadPopulatesDimensions(t *testing.T) {
 	t.Cleanup(stubDeviceID("test-device-id"))
 
