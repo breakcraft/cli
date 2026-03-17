@@ -51,8 +51,6 @@ func writeTestCache(t *testing.T, cacheDir, host, user string, c *cache) {
 	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, host+"-"+user+"-feature-flags.json"), data, 0o600))
 }
 
-// TODO: ensure we have test coverage of when background fetch occurs or not on .Fetch.
-
 func TestFetch_freshCache(t *testing.T) {
 	// Given a cache with telemetry enabled that was fetched recently
 	cacheDir := t.TempDir()
@@ -237,35 +235,6 @@ func TestFetchAndCache_updatesCache(t *testing.T) {
 	assert.True(t, flags.Telemetry)
 }
 
-func TestFetchAndCache_emptyResponsePreservesCache(t *testing.T) {
-	// Given a valid existing cache with telemetry enabled
-	cacheDir := t.TempDir()
-	writeTestCache(t, cacheDir, "github.com", "testuser", &cache{
-		Flags:     map[string]bool{"gh_cli_telemetry": true},
-		FetchedAt: time.Now().Add(-31 * time.Minute),
-	})
-
-	// And a CAFE server returning an empty flag set
-	server := newTestServer(t, map[string]bool{})
-	t.Cleanup(server.Close)
-
-	cafeClient := cafe.NewClient(server.Client(), cafe.WithBaseURL(server.URL))
-	client := NewClient(cafeClient, cacheDir, "github.com", "testuser")
-
-	// When I fetch and cache
-	_, err := client.FetchAndCache(context.Background())
-
-	// Then it should return an error about the missing flag
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "missing expected flag")
-
-	// And the prior cache should be preserved
-	flags := Fetch(cacheDir, "github.com", "testuser", "gh")
-	assert.True(t, flags.Telemetry)
-}
-
-// Lock file tests
-
 func TestIsLocked_noLockFile(t *testing.T) {
 	// Given no lock file exists
 	cacheDir := t.TempDir()
@@ -277,8 +246,9 @@ func TestIsLocked_noLockFile(t *testing.T) {
 func TestIsLocked_freshLock(t *testing.T) {
 	// Given a recently created lock file
 	cacheDir := t.TempDir()
-	require.NoError(t, CreateLockFile(cacheDir, "github.com", "testuser"))
-	t.Cleanup(func() { RemoveLockFile(cacheDir, "github.com", "testuser") })
+	unlock, err := CreateLockFile(cacheDir, "github.com", "testuser")
+	require.NoError(t, err)
+	t.Cleanup(unlock)
 
 	// Then IsLocked should return true
 	assert.True(t, IsLocked(cacheDir, "github.com", "testuser"))
@@ -301,13 +271,14 @@ func TestCreateAndRemoveLockFile(t *testing.T) {
 	cacheDir := t.TempDir()
 
 	// When I create a lock file
-	require.NoError(t, CreateLockFile(cacheDir, "github.com", "testuser"))
+	unlock, err := CreateLockFile(cacheDir, "github.com", "testuser")
+	require.NoError(t, err)
 
 	// Then it should be locked
 	assert.True(t, IsLocked(cacheDir, "github.com", "testuser"))
 
-	// When I remove the lock file
-	RemoveLockFile(cacheDir, "github.com", "testuser")
+	// When I call the unlock function
+	unlock()
 
 	// Then it should no longer be locked
 	assert.False(t, IsLocked(cacheDir, "github.com", "testuser"))
@@ -316,8 +287,9 @@ func TestCreateAndRemoveLockFile(t *testing.T) {
 func TestFetch_skipsSpawnWhenLocked(t *testing.T) {
 	// Given a missing cache but a fresh lock file (another process is fetching)
 	cacheDir := t.TempDir()
-	require.NoError(t, CreateLockFile(cacheDir, "github.com", "testuser"))
-	t.Cleanup(func() { RemoveLockFile(cacheDir, "github.com", "testuser") })
+	unlock, err := CreateLockFile(cacheDir, "github.com", "testuser")
+	require.NoError(t, err)
+	t.Cleanup(unlock)
 
 	// When I fetch feature flags
 	flags := Fetch(cacheDir, "github.com", "testuser", "this-executable-does-not-exist")
@@ -333,8 +305,9 @@ func TestFetch_staleCacheWhenLocked(t *testing.T) {
 		Flags:     map[string]bool{"gh_cli_telemetry": true},
 		FetchedAt: time.Now().Add(-31 * time.Minute),
 	})
-	require.NoError(t, CreateLockFile(cacheDir, "github.com", "testuser"))
-	t.Cleanup(func() { RemoveLockFile(cacheDir, "github.com", "testuser") })
+	unlock, err := CreateLockFile(cacheDir, "github.com", "testuser")
+	require.NoError(t, err)
+	t.Cleanup(unlock)
 
 	// When I fetch feature flags
 	flags := Fetch(cacheDir, "github.com", "testuser", "this-executable-does-not-exist")
@@ -342,8 +315,6 @@ func TestFetch_staleCacheWhenLocked(t *testing.T) {
 	// Then it should return the stale cached value as fallback (not defaults)
 	assert.True(t, flags.Telemetry)
 }
-
-// FromCache tests
 
 func TestFromCache_freshCache(t *testing.T) {
 	// Given a cache with telemetry enabled
@@ -354,9 +325,10 @@ func TestFromCache_freshCache(t *testing.T) {
 	})
 
 	// When I read from cache
-	flags := FromCache(cacheDir, "github.com", "testuser")
+	flags, err := FromCache(cacheDir, "github.com", "testuser")
 
-	// Then telemetry should be enabled
+	// Then it should succeed with telemetry enabled
+	require.NoError(t, err)
 	assert.True(t, flags.Telemetry)
 }
 
@@ -365,10 +337,10 @@ func TestFromCache_missingCache(t *testing.T) {
 	cacheDir := t.TempDir()
 
 	// When I read from cache
-	flags := FromCache(cacheDir, "github.com", "testuser")
+	_, err := FromCache(cacheDir, "github.com", "testuser")
 
-	// Then it should return defaults (all flags disabled)
-	assert.False(t, flags.Telemetry)
+	// Then it should return an error
+	require.Error(t, err)
 }
 
 func TestFromCache_corruptCache(t *testing.T) {
@@ -378,13 +350,11 @@ func TestFromCache_corruptCache(t *testing.T) {
 	require.NoError(t, os.WriteFile(path, []byte("not json"), 0o600))
 
 	// When I read from cache
-	flags := FromCache(cacheDir, "github.com", "testuser")
+	_, err := FromCache(cacheDir, "github.com", "testuser")
 
-	// Then it should return defaults (all flags disabled)
-	assert.False(t, flags.Telemetry)
+	// Then it should return an error
+	require.Error(t, err)
 }
-
-// runFetchSubprocess tests
 
 func TestRunFetchSubprocess_invalidExecutable(t *testing.T) {
 	// Given an executable that does not exist

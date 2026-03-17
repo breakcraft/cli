@@ -303,9 +303,9 @@ func featureFlagsFunc(f *cmdutil.Factory) func(cmd *cobra.Command) (gh.FeatureFl
 
 // guessTargetHost determines the GitHub host that the current command targets.
 // It checks sources in priority order: --repo flag / GH_REPO env, --hostname flag,
-// git remotes (via f.BaseRepo), and finally the configured default host.
+// repo subcommand positional argument, git remotes (via f.BaseRepo), and finally
+// the configured default host.
 func guessTargetHost(cmd *cobra.Command, f *cmdutil.Factory) string {
-	// TODO: add conditional for repo command positional argument
 	// 1. --repo flag or GH_REPO env var
 	override, _ := cmd.Flags().GetString("repo")
 	if override == "" {
@@ -322,12 +322,21 @@ func guessTargetHost(cmd *cobra.Command, f *cmdutil.Factory) string {
 		return hostname
 	}
 
-	// 3. Git remotes; f.BaseRepo is BaseRepoFunc (local, no network) in root's closure
+	// 3. Positional repo argument for "gh repo <subcommand> [OWNER/REPO]" commands
+	if cmd.Parent() != nil && cmd.Parent().Name() == "repo" {
+		if args := cmd.Flags().Args(); len(args) > 0 {
+			if r, err := ghrepo.FromFullName(args[0]); err == nil {
+				return r.RepoHost()
+			}
+		}
+	}
+
+	// 4. Git remotes; f.BaseRepo is BaseRepoFunc (local, no network) in root's closure
 	if baseRepo, err := f.BaseRepo(); err == nil {
 		return baseRepo.RepoHost()
 	}
 
-	// 4. Default host from config / GH_HOST env
+	// 5. Default host from config / GH_HOST env
 	if cfg, err := f.Config(); err == nil {
 		host, _ := cfg.Authentication().DefaultHost()
 		return host

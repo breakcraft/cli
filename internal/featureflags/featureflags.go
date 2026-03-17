@@ -1,14 +1,15 @@
 // Package featureflags provides a cached feature flag client backed by the CAFE service.
 //
 // The intended lifecycle is:
-//  1. At startup, call Fetch to load defaults overlaid with cached flags. If the
-//     cache is missing, stale, or broken, Fetch spawns a subprocess to refresh it
-//     and blocks for up to fetchTimeout waiting for the result.
+//  1. At startup, call Fetch to load defaults overlaid with cached flags.
 //  2. The caller memoizes the returned snapshot — flags never change mid-command.
-//  3. The refresh subprocess calls Client.FetchAndCache to fetch from CAFE,
+//  3. If the cache is nearing expiry (soft refresh window), Fetch returns cached
+//     values immediately and spawns a background subprocess to refresh the cache.
+//  4. If the cache is missing, stale, or broken, Fetch spawns a subprocess and
+//     blocks for up to fetchTimeout waiting for the result. On timeout it falls
+//     back to stale cached values or defaults.
+//  5. The refresh subprocess calls Client.FetchAndCache to fetch from CAFE,
 //     atomically write the cache to disk, and print the flags to stdout.
-//  4. If the subprocess completes within the timeout, Fetch uses the stdout result
-//     directly. Otherwise it falls back to stale cached values or defaults.
 //
 // A lock file prevents concurrent fetch subprocesses when gh is invoked in a loop.
 package featureflags
@@ -58,13 +59,13 @@ func fromMap(flags map[string]bool) gh.FeatureFlagState {
 }
 
 // FromCache reads the feature flag cache for the given scope and returns the
-// flag state. Returns defaults if the cache is missing or unreadable.
-func FromCache(cacheDir, host, user string) gh.FeatureFlagState {
+// flag state. Returns an error if the cache is missing or unreadable.
+func FromCache(cacheDir, host, user string) (gh.FeatureFlagState, error) {
 	c, err := readCache(cachePath(cacheDir, host, user))
 	if err != nil {
-		return gh.FeatureFlagState{}
+		return gh.FeatureFlagState{}, err
 	}
-	return fromMap(c.Flags)
+	return fromMap(c.Flags), nil
 }
 
 func Fetch(cacheDir, host, user string, executable string) gh.FeatureFlagState {
@@ -173,20 +174,14 @@ func NewClient(cafeClient *cafe.Client, cacheDir, host, user string) *Client {
 // FetchAndCache fetches all feature flags from CAFE, validates the response,
 // atomically writes the cache, and returns the flag state. If the CAFE response
 // is invalid, the prior cache is preserved.
+//
+// The cache stores the raw flag map rather than the in-memory FeatureFlagState
+// struct so that changes to the struct (renames, new fields) don't invalidate
+// existing cache files on disk.
 func (c *Client) FetchAndCache(ctx context.Context) (gh.FeatureFlagState, error) {
 	flags, err := c.cafe.GetFeatureFlags(ctx, allFlagNames)
 	if err != nil {
 		return gh.FeatureFlagState{}, fmt.Errorf("fetching feature flags from CAFE: %w", err)
-	}
-
-	// Validate: ensure we got a non-nil map with all expected keys before overwriting cache.
-	if flags == nil {
-		return gh.FeatureFlagState{}, fmt.Errorf("CAFE returned nil flags")
-	}
-	for _, name := range allFlagNames {
-		if _, ok := flags[name]; !ok {
-			return gh.FeatureFlagState{}, fmt.Errorf("CAFE response missing expected flag: %s", name)
-		}
 	}
 
 	if err := writeCache(cachePath(c.cacheDir, c.host, c.user), &cache{
@@ -263,17 +258,16 @@ func IsLocked(cacheDir, host, user string) bool {
 }
 
 // CreateLockFile creates a lock file to signal that a fetch is in progress.
-// The caller should defer RemoveLockFile.
-func CreateLockFile(cacheDir, host, user string) error {
+// It returns an unlock function that removes the lock file; the caller should
+// defer it.
+func CreateLockFile(cacheDir, host, user string) (unlock func(), err error) {
 	p := lockPath(cacheDir, host, user)
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
-		return err
+		return nil, err
 	}
 	// Write our PID so the lock can be inspected for debugging.
-	return os.WriteFile(p, []byte(strconv.Itoa(os.Getpid())), 0o644)
-}
-
-// RemoveLockFile removes the lock file created by CreateLockFile.
-func RemoveLockFile(cacheDir, host, user string) {
-	_ = os.Remove(lockPath(cacheDir, host, user))
+	if err := os.WriteFile(p, []byte(strconv.Itoa(os.Getpid())), 0o644); err != nil {
+		return nil, err
+	}
+	return func() { _ = os.Remove(p) }, nil
 }

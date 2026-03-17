@@ -84,7 +84,10 @@ func newCmdFetchFeatureFlags(f *cmdutil.Factory, runF func(*FetchFeatureFlagsOpt
 
 func runFetchFeatureFlags(opts *FetchFeatureFlagsOptions) error {
 	if opts.FromCache {
-		flags := featureflags.FromCache(opts.CacheDir, opts.Host, opts.User)
+		flags, err := featureflags.FromCache(opts.CacheDir, opts.Host, opts.User)
+		if err != nil {
+			return err
+		}
 		flagStr, err := json.MarshalIndent(flags, "", "  ")
 		if err != nil {
 			return err
@@ -93,12 +96,12 @@ func runFetchFeatureFlags(opts *FetchFeatureFlagsOptions) error {
 		return nil
 	}
 
-	// Acquire a lock file so concurrent gh invocations (e.g. in a loop) don't
-	// all try to fetch at the same time.
-	if err := featureflags.CreateLockFile(opts.CacheDir, opts.Host, opts.User); err != nil {
+	// Acquire a lock file so concurrent gh invocations (e.g. in a loop) don't all try to fetch at the same time.
+	unlock, err := featureflags.CreateLockFile(opts.CacheDir, opts.Host, opts.User)
+	if err != nil {
 		return fmt.Errorf("creating lock file: %w", err)
 	}
-	defer featureflags.RemoveLockFile(opts.CacheDir, opts.Host, opts.User)
+	defer unlock()
 
 	// TODO: This looks very similar to the send-telemtry http client.
 	httpClient := &http.Client{

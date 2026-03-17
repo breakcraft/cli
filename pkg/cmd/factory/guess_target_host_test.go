@@ -20,6 +20,8 @@ func TestGuessTargetHost(t *testing.T) {
 		ghRepoEnv    string
 		baseRepo     ghrepo.Interface
 		baseRepoErr  error
+		parentName   string
+		args         []string
 		wantHost     string
 	}{
 		{
@@ -58,6 +60,25 @@ func TestGuessTargetHost(t *testing.T) {
 			wantHost:     "ghes.example.com",
 		},
 		{
+			// Given a "gh repo" subcommand with a positional HOST/OWNER/REPO argument
+			// When I guess the target host
+			// Then it should return the host from the positional argument
+			name:       "repo subcommand positional arg with host",
+			parentName: "repo",
+			args:       []string{"ghes.example.com/org/repo"},
+			wantHost:   "ghes.example.com",
+		},
+		{
+			// Given a "gh repo" subcommand with a positional OWNER/REPO argument (no host)
+			// When I guess the target host
+			// Then it should fall back to the default host
+			name:        "repo subcommand positional arg without host falls through",
+			parentName:  "repo",
+			args:        []string{"org/repo"},
+			baseRepoErr: assert.AnError,
+			wantHost:    "github.com",
+		},
+		{
 			// Given a git remote pointing to a GHES host
 			// When I guess the target host
 			// Then it should return the host from the git remote
@@ -82,6 +103,10 @@ func TestGuessTargetHost(t *testing.T) {
 			}
 
 			cmd := &cobra.Command{Use: "test"}
+			if tt.parentName != "" {
+				parent := &cobra.Command{Use: tt.parentName}
+				parent.AddCommand(cmd)
+			}
 			if tt.repoFlag != "" || tt.ghRepoEnv != "" {
 				cmd.Flags().StringP("repo", "R", "", "")
 				if tt.repoFlag != "" {
@@ -93,6 +118,9 @@ func TestGuessTargetHost(t *testing.T) {
 				if tt.hostname != "" {
 					cmd.Flags().Set("hostname", tt.hostname)
 				}
+			}
+			if len(tt.args) > 0 {
+				cmd.Flags().Parse(tt.args)
 			}
 
 			f := &cmdutil.Factory{

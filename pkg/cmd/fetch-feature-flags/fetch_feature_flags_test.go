@@ -238,7 +238,7 @@ func TestRunFetchFeatureFlags_fromCacheMissing(t *testing.T) {
 	// Given no cache file exists
 	cacheDir := t.TempDir()
 
-	ios, _, stdout, _ := iostreams.Test()
+	ios, _, _, _ := iostreams.Test()
 	opts := &FetchFeatureFlagsOptions{
 		IO:        ios,
 		FromCache: true,
@@ -250,9 +250,6 @@ func TestRunFetchFeatureFlags_fromCacheMissing(t *testing.T) {
 	// When I run with --from-cache
 	err := runFetchFeatureFlags(opts)
 
-	// Then it should succeed and output defaults (telemetry disabled)
-	require.NoError(t, err)
-	var flags gh.FeatureFlagState
-	require.NoError(t, json.Unmarshal(stdout.Bytes(), &flags))
-	assert.False(t, flags.Telemetry)
+	// Then it should return an error because no cache exists
+	require.Error(t, err)
 }
