@@ -321,7 +321,7 @@ func guessTargetHost(cmd *cobra.Command, f *cmdutil.Factory) string {
 		return hostname
 	}
 
-	// 3. Git remotes — f.BaseRepo is BaseRepoFunc (local, no network) in root's closure
+	// 3. Git remotes; f.BaseRepo is BaseRepoFunc (local, no network) in root's closure
 	if baseRepo, err := f.BaseRepo(); err == nil {
 		return baseRepo.RepoHost()
 	}
