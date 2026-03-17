@@ -18,7 +18,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const defaultFeatureFlagEndpointURL = "https://clientapps.github.com"
+const defaultFeatureFlagServerURL = "https://clientapps.github.com"
+
+func NewCmdFetchFeatureFlags(f *cmdutil.Factory) *cobra.Command {
+	return newCmdFetchFeatureFlags(f, nil)
+}
 
 type FetchFeatureFlagsOptions struct {
 	IO                     *iostreams.IOStreams
@@ -29,10 +33,6 @@ type FetchFeatureFlagsOptions struct {
 	User                   string
 	HTTPUnixSocket         string
 	FromCache              bool
-}
-
-func NewCmdFetchFeatureFlags(f *cmdutil.Factory) *cobra.Command {
-	return newCmdFetchFeatureFlags(f, nil)
 }
 
 func newCmdFetchFeatureFlags(f *cmdutil.Factory, runF func(*FetchFeatureFlagsOptions) error) *cobra.Command {
@@ -68,7 +68,7 @@ func newCmdFetchFeatureFlags(f *cmdutil.Factory, runF func(*FetchFeatureFlagsOpt
 				return err
 			}
 
-			opts.FeatureFlagEndpointURL = cmp.Or(os.Getenv("FEATURE_FLAG_ENDPOINT_URL"), defaultFeatureFlagEndpointURL)
+			opts.FeatureFlagEndpointURL = cmp.Or(os.Getenv("FEATURE_FLAG_ENDPOINT_URL"), defaultFeatureFlagServerURL)
 			opts.AuthToken = token
 			opts.CacheDir = cfg.CacheDir()
 			opts.Host = host
@@ -98,6 +98,7 @@ func runFetchFeatureFlags(opts *FetchFeatureFlagsOptions) error {
 		return nil
 	}
 
+	// TODO: This looks very similar to the send-telemtry http client.
 	httpClient := &http.Client{
 		Timeout:   5 * time.Second,
 		Transport: &bearerTokenTransport{token: opts.AuthToken, base: handleUnixDomainSocket(opts.HTTPUnixSocket)},

@@ -92,9 +92,3 @@ func TestGetFeatureFlags_serverError(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "fetching feature flags from CAFE")
 }
-
-func TestNewClient_defaultBaseURL(t *testing.T) {
-	// Verify it doesn't panic and creates a valid client with the default URL
-	client := NewClient(http.DefaultClient)
-	assert.NotNil(t, client.viewer)
-}

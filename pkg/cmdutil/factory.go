@@ -37,6 +37,12 @@ type Factory struct {
 	PlainHttpClient func() (*http.Client, error)
 	Remotes         func() (context.Remotes, error)
 
+	// FeatureFlags returns the state of feature flags for the current user and host.
+	// It returns a memoized snapshot of flags on first invocation, and may result
+	// in feature flags being fetched remotely if not cached.
+	// TODO(feature-flag-improvements): consider taking this off the factory, so it is called
+	// once around the PersistentPreRunE phase of command invocation, and the feature flags
+	// are added into a context.Context.
 	FeatureFlags func(cmd *cobra.Command) (gh.FeatureFlagState, error)
 }
 

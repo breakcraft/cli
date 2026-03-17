@@ -51,7 +51,7 @@ func writeTestCache(t *testing.T, cacheDir, host, user string, c *cache) {
 	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, host+"-"+user+"-feature-flags.json"), data, 0o600))
 }
 
-// --- Fetch tests ---
+// TODO: ensure we have test coverage of when background fetch occurs or not on .Fetch.
 
 func TestFetch_freshCache(t *testing.T) {
 	// Given a cache with telemetry enabled that was fetched recently
@@ -123,8 +123,6 @@ func TestFetch_staleCacheReturnsExistingFlags(t *testing.T) {
 	assert.True(t, flags.Telemetry)
 }
 
-// --- FetchAndCache tests ---
-
 func TestFetchAndCache_success(t *testing.T) {
 	// Given a CAFE server returning the telemetry flag as enabled
 	cacheDir := t.TempDir()
@@ -141,6 +139,7 @@ func TestFetchAndCache_success(t *testing.T) {
 	require.NoError(t, err)
 
 	// And the cache should contain the enabled flag
+	// TODO: This should check the cache, not call Fetch directly.
 	flags := Fetch(cacheDir, "github.com", "testuser", "gh")
 	assert.True(t, flags.Telemetry)
 }
@@ -193,6 +192,7 @@ func TestFetchAndCache_preservesPriorCacheOnError(t *testing.T) {
 	require.Error(t, err)
 
 	// And the prior cache should be preserved
+	// TODO: check the cache
 	flags := Fetch(cacheDir, "github.com", "testuser", "gh")
 	assert.True(t, flags.Telemetry)
 }
@@ -219,6 +219,7 @@ func TestFetchAndCache_updatesCache(t *testing.T) {
 	require.NoError(t, err)
 
 	// And the cache should be updated with the new value
+	// TODO: check the cache, not call Fetch directly
 	flags := Fetch(cacheDir, "github.com", "testuser", "gh")
 	assert.True(t, flags.Telemetry)
 }
@@ -246,6 +247,7 @@ func TestFetchAndCache_emptyResponsePreservesCache(t *testing.T) {
 	assert.Contains(t, err.Error(), "missing expected flag")
 
 	// And the prior cache should be preserved
+	// TODO: check the cache
 	flags := Fetch(cacheDir, "github.com", "testuser", "gh")
 	assert.True(t, flags.Telemetry)
 }

@@ -68,6 +68,8 @@ func TestRunFetchFeatureFlags_success(t *testing.T) {
 
 	// Then it should succeed and cache should be populated
 	require.NoError(t, err)
+
+	// This should read directly from the cache, not using featureflags.Fetch
 	flags := featureflags.Fetch(cacheDir, "github.com", "testuser", "")
 	assert.True(t, flags.Telemetry)
 }
@@ -105,13 +107,18 @@ func TestRunFetchFeatureFlags_fromCache(t *testing.T) {
 	})
 	require.NoError(t, os.WriteFile(filepath.Join(cacheDir, "github.com-testuser-feature-flags.json"), cacheData, 0o600))
 
+	// This should not be hit, but if it is, it returns telemetry disabled
+	server := newCAFEServer(t, map[string]bool{"gh_cli_telemetry": false})
+	t.Cleanup(server.Close)
+
 	ios, _, stdout, _ := iostreams.Test()
 	opts := &FetchFeatureFlagsOptions{
-		IO:        ios,
-		FromCache: true,
-		CacheDir:  cacheDir,
-		Host:      "github.com",
-		User:      "testuser",
+		FeatureFlagEndpointURL: server.URL,
+		IO:                     ios,
+		FromCache:              true,
+		CacheDir:               cacheDir,
+		Host:                   "github.com",
+		User:                   "testuser",
 	}
 
 	// When I fetch feature flags with --from-cache
@@ -157,7 +164,7 @@ hosts:
 	// Then it should succeed and populate options
 	require.NoError(t, err)
 	require.NotNil(t, gotOpts)
-	assert.Equal(t, defaultFeatureFlagEndpointURL, gotOpts.FeatureFlagEndpointURL)
+	assert.Equal(t, defaultFeatureFlagServerURL, gotOpts.FeatureFlagEndpointURL)
 	assert.Equal(t, "github.com", gotOpts.Host)
 	assert.Equal(t, "test-token", gotOpts.AuthToken)
 	assert.Equal(t, "testuser", gotOpts.User)

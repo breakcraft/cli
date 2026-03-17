@@ -46,7 +46,7 @@ func New(appVersion string) *cmdutil.Factory {
 	f.Browser = newBrowser(f)                              // Depends on Config, and IOStreams
 	f.ExtensionManager = extensionManager(f)               // Depends on Config, HttpClient, and IOStreams
 	f.Branch = branchFunc(f)                               // Depends on GitClient
-	f.FeatureFlags = featureFlagsFunc(f)
+	f.FeatureFlags = featureFlagsFunc(f)                   // Depends on Config, and BaseRepo
 
 	return f
 }
@@ -305,6 +305,7 @@ func featureFlagsFunc(f *cmdutil.Factory) func(cmd *cobra.Command) (gh.FeatureFl
 // It checks sources in priority order: --repo flag / GH_REPO env, --hostname flag,
 // git remotes (via f.BaseRepo), and finally the configured default host.
 func guessTargetHost(cmd *cobra.Command, f *cmdutil.Factory) string {
+	// TODO: add conditional for repo command positional argument
 	// 1. --repo flag or GH_REPO env var
 	override, _ := cmd.Flags().GetString("repo")
 	if override == "" {
