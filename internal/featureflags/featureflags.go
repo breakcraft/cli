@@ -168,7 +168,7 @@ func spawnFetchFeatureFlags(executable, host string) {
 	cmd.Stdin = nil
 	cmd.Stdout = io.Discard
 	cmd.Stderr = io.Discard
-	cmd.Env = append(os.Environ(), "GH_HOST="+host)
+	cmd.Env = append(os.Environ(), "GH_HOST="+host) // Other occurrences of GH_HOST will be ignored, if any.
 	if err := cmd.Start(); err != nil {
 		return
 	}
