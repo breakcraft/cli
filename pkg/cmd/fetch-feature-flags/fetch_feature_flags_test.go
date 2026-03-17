@@ -55,7 +55,9 @@ func TestRunFetchFeatureFlags_success(t *testing.T) {
 	server := newCAFEServer(t, map[string]bool{"gh_cli_telemetry": true})
 	t.Cleanup(server.Close)
 
+	ios, _, stdout, _ := iostreams.Test()
 	opts := &FetchFeatureFlagsOptions{
+		IO:                     ios,
 		FeatureFlagEndpointURL: server.URL,
 		AuthToken:              "test-token",
 		CacheDir:               cacheDir,
@@ -69,9 +71,16 @@ func TestRunFetchFeatureFlags_success(t *testing.T) {
 	// Then it should succeed and cache should be populated
 	require.NoError(t, err)
 
-	// This should read directly from the cache, not using featureflags.Fetch
 	flags := featureflags.Fetch(cacheDir, "github.com", "testuser", "")
 	assert.True(t, flags.Telemetry)
+
+	// And the flags should be printed to stdout as JSON
+	var outputFlags gh.FeatureFlagState
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &outputFlags))
+	assert.True(t, outputFlags.Telemetry)
+
+	// And the lock file should be cleaned up
+	assert.False(t, featureflags.IsLocked(cacheDir, "github.com", "testuser"))
 }
 
 func TestRunFetchFeatureFlags_cafeError(t *testing.T) {
@@ -83,7 +92,9 @@ func TestRunFetchFeatureFlags_cafeError(t *testing.T) {
 	server := httptest.NewServer(mux)
 	t.Cleanup(server.Close)
 
+	ios, _, _, _ := iostreams.Test()
 	opts := &FetchFeatureFlagsOptions{
+		IO:                     ios,
 		FeatureFlagEndpointURL: server.URL,
 		AuthToken:              "test-token",
 		CacheDir:               cacheDir,
@@ -96,6 +107,9 @@ func TestRunFetchFeatureFlags_cafeError(t *testing.T) {
 
 	// Then it should return an error
 	require.Error(t, err)
+
+	// And the lock file should be cleaned up even on error
+	assert.False(t, featureflags.IsLocked(cacheDir, "github.com", "testuser"))
 }
 
 func TestRunFetchFeatureFlags_fromCache(t *testing.T) {
@@ -130,9 +144,7 @@ func TestRunFetchFeatureFlags_fromCache(t *testing.T) {
 }
 
 func TestNewCmdFetchFeatureFlags(t *testing.T) {
-	// Given GH_HOST is set and config has a token for that host
-	t.Setenv("GH_HOST", "github.com")
-
+	// Given config has a token for the host
 	cfg := config.NewFromString(`
 hosts:
   github.com:
@@ -153,7 +165,7 @@ hosts:
 		gotOpts = opts
 		return nil
 	})
-	cmd.SetArgs([]string{})
+	cmd.SetArgs([]string{"--hostname", "github.com"})
 	cmd.SetIn(&bytes.Buffer{})
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})
@@ -168,4 +180,79 @@ hosts:
 	assert.Equal(t, "github.com", gotOpts.Host)
 	assert.Equal(t, "test-token", gotOpts.AuthToken)
 	assert.Equal(t, "testuser", gotOpts.User)
+}
+
+func TestNewCmdFetchFeatureFlags_missingHostname(t *testing.T) {
+	// Given a command with no --hostname flag
+
+	ios, _, _, _ := iostreams.Test()
+	f := &cmdutil.Factory{IOStreams: ios}
+
+	cmd := newCmdFetchFeatureFlags(f, func(opts *FetchFeatureFlagsOptions) error {
+		return nil
+	})
+	cmd.SetArgs([]string{})
+	cmd.SetIn(&bytes.Buffer{})
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+
+	// When I execute the command
+	_, err := cmd.ExecuteC()
+
+	// Then it should fail because --hostname is required
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "hostname")
+}
+
+func TestNewCmdFetchFeatureFlags_missingToken(t *testing.T) {
+	// Given a config with no token for the host
+	cfg := config.NewFromString(`
+hosts:
+  github.com:
+    user: testuser
+`)
+
+	ios, _, _, _ := iostreams.Test()
+	f := &cmdutil.Factory{
+		IOStreams: ios,
+		Config: func() (gh.Config, error) {
+			return cfg, nil
+		},
+	}
+
+	cmd := newCmdFetchFeatureFlags(f, nil)
+	cmd.SetArgs([]string{"--hostname", "github.com"})
+	cmd.SetIn(&bytes.Buffer{})
+	cmd.SetOut(&bytes.Buffer{})
+	cmd.SetErr(&bytes.Buffer{})
+
+	// When I execute the command
+	_, err := cmd.ExecuteC()
+
+	// Then it should fail because no auth token is available
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "token")
+}
+
+func TestRunFetchFeatureFlags_fromCacheMissing(t *testing.T) {
+	// Given no cache file exists
+	cacheDir := t.TempDir()
+
+	ios, _, stdout, _ := iostreams.Test()
+	opts := &FetchFeatureFlagsOptions{
+		IO:        ios,
+		FromCache: true,
+		CacheDir:  cacheDir,
+		Host:      "github.com",
+		User:      "testuser",
+	}
+
+	// When I run with --from-cache
+	err := runFetchFeatureFlags(opts)
+
+	// Then it should succeed and output defaults (telemetry disabled)
+	require.NoError(t, err)
+	var flags gh.FeatureFlagState
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &flags))
+	assert.False(t, flags.Telemetry)
 }

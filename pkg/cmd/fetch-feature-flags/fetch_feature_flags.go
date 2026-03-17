@@ -51,19 +51,13 @@ func newCmdFetchFeatureFlags(f *cmdutil.Factory, runF func(*FetchFeatureFlagsOpt
 				return err
 			}
 
-			// The parent process sets GH_HOST to the targeted host.
-			host := os.Getenv("GH_HOST")
-			if host == "" {
-				return errors.New("GH_HOST environment variable must be set")
-			}
-
 			authCfg := cfg.Authentication()
-			token, _ := authCfg.ActiveToken(host)
+			token, _ := authCfg.ActiveToken(opts.Host)
 			if token == "" {
 				return errors.New("expected to have a token")
 			}
 
-			user, err := authCfg.ActiveUser(host)
+			user, err := authCfg.ActiveUser(opts.Host)
 			if err != nil {
 				return err
 			}
@@ -71,9 +65,8 @@ func newCmdFetchFeatureFlags(f *cmdutil.Factory, runF func(*FetchFeatureFlagsOpt
 			opts.FeatureFlagEndpointURL = cmp.Or(os.Getenv("FEATURE_FLAG_ENDPOINT_URL"), defaultFeatureFlagServerURL)
 			opts.AuthToken = token
 			opts.CacheDir = cfg.CacheDir()
-			opts.Host = host
 			opts.User = user
-			opts.HTTPUnixSocket = cfg.HTTPUnixSocket(host).Value
+			opts.HTTPUnixSocket = cfg.HTTPUnixSocket(opts.Host).Value
 
 			if runF != nil {
 				return runF(opts)
@@ -83,13 +76,15 @@ func newCmdFetchFeatureFlags(f *cmdutil.Factory, runF func(*FetchFeatureFlagsOpt
 	}
 
 	cmd.Flags().BoolVar(&opts.FromCache, "from-cache", false, "Print cached feature flags instead of fetching from remote")
+	cmd.Flags().StringVar(&opts.Host, "hostname", "", "GitHub hostname to fetch feature flags for")
+	_ = cmd.MarkFlagRequired("hostname")
 
 	return cmd
 }
 
 func runFetchFeatureFlags(opts *FetchFeatureFlagsOptions) error {
 	if opts.FromCache {
-		flags := featureflags.Fetch(opts.CacheDir, opts.Host, opts.User, "")
+		flags := featureflags.FromCache(opts.CacheDir, opts.Host, opts.User)
 		flagStr, err := json.MarshalIndent(flags, "", "  ")
 		if err != nil {
 			return err
@@ -97,6 +92,13 @@ func runFetchFeatureFlags(opts *FetchFeatureFlagsOptions) error {
 		fmt.Fprintf(opts.IO.Out, "%s\n", flagStr)
 		return nil
 	}
+
+	// Acquire a lock file so concurrent gh invocations (e.g. in a loop) don't
+	// all try to fetch at the same time.
+	if err := featureflags.CreateLockFile(opts.CacheDir, opts.Host, opts.User); err != nil {
+		return fmt.Errorf("creating lock file: %w", err)
+	}
+	defer featureflags.RemoveLockFile(opts.CacheDir, opts.Host, opts.User)
 
 	// TODO: This looks very similar to the send-telemtry http client.
 	httpClient := &http.Client{
@@ -111,7 +113,19 @@ func runFetchFeatureFlags(opts *FetchFeatureFlagsOptions) error {
 	cafeClient := cafe.NewClient(httpClient, cafeOpts...)
 	ffClient := featureflags.NewClient(cafeClient, opts.CacheDir, opts.Host, opts.User)
 
-	return ffClient.FetchAndCache(context.Background())
+	flags, err := ffClient.FetchAndCache(context.Background())
+	if err != nil {
+		return err
+	}
+
+	// Output the flags on stdout so the parent process can consume them
+	// directly without re-reading the cache file.
+	data, err := json.Marshal(flags)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(opts.IO.Out, "%s\n", data)
+	return nil
 }
 
 type bearerTokenTransport struct {
