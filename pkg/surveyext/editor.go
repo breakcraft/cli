@@ -34,6 +34,7 @@ func init() {
 // EXTENDED to enable different prompting behavior
 type GhEditor struct {
 	*survey.Editor
+
 	EditorCommand string
 	BlankAllowed  bool
 
@@ -56,6 +57,7 @@ var EditorQuestionTemplate = `
 // EXTENDED to pass editor name (to use in prompt)
 type EditorTemplateData struct {
 	survey.Editor
+
 	EditorCommand string
 	BlankAllowed  bool
 	Answer        string

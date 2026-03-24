@@ -327,7 +327,7 @@ func selectSSHKeys(
 	opts sshOptions,
 ) (*ssh.KeyPair, bool, error) {
 	customConfigPath := ""
-	for i := 0; i < len(args); i += 1 {
+	for i := range args {
 		arg := args[i]
 
 		if arg == "-i" {
@@ -703,6 +703,7 @@ func automaticPrivateKeyPath(sshContext ssh.Context) (string, error) {
 
 type cpOptions struct {
 	sshOptions
+
 	recursive bool // -r
 	expand    bool // -e
 }
@@ -778,7 +779,6 @@ func (a *App) Copy(ctx context.Context, args []string, opts cpOptions) error {
 			if !opts.expand {
 				arg = `remote:'` + strings.Replace(rest, `'`, `'\''`, -1) + `'`
 			}
-
 		} else if !filepath.IsAbs(arg) {
 			// scp treats a colon in the first path segment as a host identifier.
 			// Escape it by prepending "./".

@@ -292,7 +292,6 @@ func Test_deleteRun(t *testing.T) {
 					return 0, nil
 				})
 			}
-
 		}
 
 		tt.opts.Prompter = pm

@@ -45,6 +45,7 @@ type EditableSlice struct {
 // It contains a flag to indicate whether the assignees are actors or not.
 type EditableAssignees struct {
 	EditableSlice
+
 	ActorAssignees bool
 	DefaultLogins  []string // For disambiguating actors from display names
 }
@@ -52,6 +53,7 @@ type EditableAssignees struct {
 // EditableReviewers is a special case of EditableSlice.
 type EditableReviewers struct {
 	EditableSlice
+
 	DefaultLogins []string // For disambiguating actors from display names
 }
 
@@ -59,6 +61,7 @@ type EditableReviewers struct {
 // Keep that map along with standard EditableSlice data.
 type EditableProjects struct {
 	EditableSlice
+
 	ProjectItems map[string]string
 }
 

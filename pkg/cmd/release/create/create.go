@@ -253,9 +253,9 @@ func createRun(opts *CreateOptions) error {
 		}
 
 		if len(tags) != 0 {
-			options := make([]string, len(tags))
-			for i, tag := range tags {
-				options[i] = tag.Name
+			options := make([]string, 0, len(tags)+1)
+			for _, tag := range tags {
+				options = append(options, tag.Name)
 			}
 			createNewTagOption := "Create a new tag"
 			options = append(options, createNewTagOption)

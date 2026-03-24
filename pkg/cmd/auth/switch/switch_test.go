@@ -80,7 +80,6 @@ func TestNewCmdSwitch(t *testing.T) {
 			require.Equal(t, &tt.expectedOpts, gotOpts)
 		})
 	}
-
 }
 
 func TestSwitchRun(t *testing.T) {

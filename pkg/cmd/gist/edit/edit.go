@@ -335,12 +335,11 @@ func editRun(opts *EditOptions) error {
 			break
 		}
 
-		choice := ""
 		result, err := opts.Prompter.Select("What next?", "", editNextOptions)
 		if err != nil {
 			return fmt.Errorf("could not prompt: %w", err)
 		}
-		choice = editNextOptions[result]
+		choice := editNextOptions[result]
 
 		stop := false
 

@@ -55,7 +55,6 @@ func (c RunLogCache) Create(key string, content io.Reader) error {
 
 	if _, err := io.Copy(out, content); err != nil {
 		return fmt.Errorf("writing cache entry: %v", err)
-
 	}
 
 	return nil
@@ -349,7 +348,7 @@ func runView(opts *ViewOptions) error {
 
 	var artifacts []shared.Artifact
 	if selectedJob == nil {
-		artifacts, err = shared.ListArtifacts(httpClient, repo, strconv.FormatInt(int64(run.ID), 10))
+		artifacts, err = shared.ListArtifacts(httpClient, repo, strconv.FormatInt(run.ID, 10))
 		if err != nil {
 			return fmt.Errorf("failed to get artifacts: %w", err)
 		}

@@ -582,6 +582,7 @@ func (w *pagerWriter) Write(d []byte) (int, error) {
 // fdWriter represents a wrapped stdout Writer that preserves the original file descriptor
 type fdWriter struct {
 	io.Writer
+
 	fd uintptr
 }
 
@@ -592,6 +593,7 @@ func (w *fdWriter) Fd() uintptr {
 // fdWriteCloser represents a wrapped stdout Writer that preserves the original file descriptor
 type fdWriteCloser struct {
 	io.WriteCloser
+
 	fd uintptr
 }
 
@@ -602,6 +604,7 @@ func (w *fdWriteCloser) Fd() uintptr {
 // fdReader represents a wrapped stdin ReadCloser that preserves the original file descriptor
 type fdReader struct {
 	io.ReadCloser
+
 	fd uintptr
 }
 

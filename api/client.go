@@ -19,7 +19,7 @@ const (
 	apiVersion      = "X-GitHub-Api-Version"
 	apiVersionValue = "2022-11-28"
 	authorization   = "Authorization"
-	cacheTTL        = "X-GH-CACHE-TTL"
+	cacheTTL        = "X-Gh-Cache-Ttl"
 	graphqlFeatures = "GraphQL-Features"
 	features        = "merge_queue"
 	userAgent       = "User-Agent"
@@ -46,6 +46,7 @@ type GraphQLError struct {
 
 type HTTPError struct {
 	*ghAPI.HTTPError
+
 	scopesSuggestion string
 }
 

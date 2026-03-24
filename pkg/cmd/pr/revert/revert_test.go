@@ -87,7 +87,6 @@ func TestPRRevert_acceptedIdentifierFormats(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			http := &httpmock.Registry{}
 			defer http.Verify(t)
 

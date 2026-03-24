@@ -285,7 +285,7 @@ func gardenRun(opts *GardenOptions) error {
 		sl := statusLine(garden, player, opts.IO)
 
 		fmt.Fprint(out, "\033[;H") // move to top left
-		for y := 0; y < player.Geo.Height-1; y++ {
+		for range player.Geo.Height - 1 {
 			fmt.Fprint(out, "\033[B")
 		}
 		fmt.Fprintln(out)
@@ -342,12 +342,12 @@ func plantGarden(r *rand.Rand, commits []*Commit, geo *Geometry) [][]*Cell {
 		streamIx--
 	}
 	tint := 0
-	for y := 0; y < geo.Height; y++ {
+	for y := range geo.Height {
 		if cellIx == len(commits)-1 {
 			break
 		}
 		garden = append(garden, []*Cell{})
-		for x := 0; x < geo.Width; x++ {
+		for x := range geo.Width {
 			if (y > 0 && (x == 0 || x == geo.Width-1)) || y == geo.Height-1 {
 				garden[y] = append(garden[y], &Cell{
 					Char:       RGB(0, 150, 0, "^"),
@@ -417,7 +417,7 @@ func drawGarden(io *iostreams.IOStreams, garden [][]*Cell, player *Player) {
 	sl := ""
 	for y, gardenRow := range garden {
 		for x, gardenCell := range gardenRow {
-			char := ""
+			var char string
 			underPlayer := (player.X == x && player.Y == y)
 			if underPlayer {
 				sl = gardenCell.StatusLine

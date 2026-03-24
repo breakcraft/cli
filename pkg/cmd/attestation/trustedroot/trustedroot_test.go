@@ -194,11 +194,11 @@ func TestGetTrustedRoot(t *testing.T) {
 		require.Error(t, err)
 		require.ErrorContains(t, err, "failed to read root file")
 	})
-
 }
 
 type stubAuthConfig struct {
 	config.AuthConfig
+
 	hasActiveToken bool
 }
 

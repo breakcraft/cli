@@ -258,7 +258,6 @@ func Test_createRun(t *testing.T) {
 				reg.Register(
 					httpmock.REST("POST", "user/repos"),
 					httpmock.StringResponse(`{"name":"REPO", "owner":{"login": "OWNER"}, "html_url":"https://github.com/OWNER/REPO"}`))
-
 			},
 			execStubs: func(cs *run.CommandStubber) {
 				cs.Register(`git clone https://github.com/OWNER/REPO.git`, 0, "")

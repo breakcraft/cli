@@ -237,7 +237,6 @@ func (a *App) Create(ctx context.Context, opts createOptions) error {
 		}
 
 		if len(devcontainers) > 0 {
-
 			// if there is only one devcontainer.json file and it is one of the default paths we can auto-select it
 			if len(devcontainers) == 1 && stringInSlice(devcontainers[0].Path, DEFAULT_DEVCONTAINER_DEFINITIONS) {
 				devContainerPath = devcontainers[0].Path
@@ -527,7 +526,7 @@ func getMachineName(ctx context.Context, apiClient apiClient, prompter SurveyPro
 		}
 
 		availableMachines := make([]string, len(machines))
-		for i := 0; i < len(machines); i++ {
+		for i := range machines {
 			availableMachines[i] = machines[i].Name
 		}
 

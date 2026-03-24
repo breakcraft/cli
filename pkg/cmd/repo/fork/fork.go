@@ -170,7 +170,6 @@ func forkRun(opts *ForkOptions) error {
 			if err != nil {
 				return fmt.Errorf("did not understand argument: %w", err)
 			}
-
 		} else if strings.HasPrefix(repoArg, "git@") {
 			parsedURL, err := git.ParseURL(repoArg)
 			if err != nil {

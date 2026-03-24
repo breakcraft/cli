@@ -327,7 +327,6 @@ func lockLockable(httpClient *http.Client, repo ghrepo.Interface, lockable *api.
 
 // unlockLockable will unlock an issue or pull request
 func unlockLockable(httpClient *http.Client, repo ghrepo.Interface, lockable *api.Issue) error {
-
 	var mutation struct {
 		UnlockLockable struct {
 			UnlockedRecord struct {

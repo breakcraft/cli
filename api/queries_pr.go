@@ -387,7 +387,6 @@ func (pr *PullRequest) ChecksStatus() PullRequestChecksStatus {
 			} else {
 				summary.Pending++
 			}
-
 		} else { // c.TypeName == StatusContext
 			switch parseCheckStatusFromStatusState(c.State) {
 			case passing:

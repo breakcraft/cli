@@ -158,7 +158,6 @@ func NewCmdCreate(f *cmdutil.Factory, runF func(*CreateOptions) error) *cobra.Co
 				if opts.Name == "" && !opts.Interactive {
 					return cmdutil.FlagErrorf("name argument required to create new remote repository")
 				}
-
 			} else if opts.Clone || opts.GitIgnoreTemplate != "" || opts.LicenseTemplate != "" || opts.Template != "" {
 				return cmdutil.FlagErrorf("the `--source` option is not supported with `--clone`, `--template`, `--license`, or `--gitignore`")
 			}
@@ -428,7 +427,6 @@ func createFromScratch(opts *CreateOptions) error {
 		} else if err := cloneWithRetry(opts, remoteURL, templateRepoMainBranch); err != nil {
 			return err
 		}
-
 	}
 
 	return nil
@@ -762,7 +760,7 @@ func hasCommits(gitClient *git.Client) (bool, error) {
 
 	var execError *exec.ExitError
 	if errors.As(err, &execError) {
-		exitCode := int(execError.ExitCode())
+		exitCode := execError.ExitCode()
 		if exitCode == 128 {
 			return false, nil
 		}
@@ -784,7 +782,7 @@ func localRepoType(gitClient *git.Client) (repoType, error) {
 	if projectDirErr != nil {
 		var execError errWithExitCode
 		if errors.As(projectDirErr, &execError) {
-			if exitCode := int(execError.ExitCode()); exitCode == 128 {
+			if exitCode := execError.ExitCode(); exitCode == 128 {
 				return unknown, nil
 			}
 			return unknown, projectDirErr
