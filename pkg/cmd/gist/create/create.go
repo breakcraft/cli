@@ -160,7 +160,7 @@ func createRun(opts *CreateOptions) error {
 			if httpError.StatusCode == http.StatusUnprocessableEntity {
 				if detectEmptyFiles(files) {
 					fmt.Fprintf(errOut, "%s Failed to create gist: %s\n", cs.FailureIcon(), "a gist file cannot be blank")
-					return cmdutil.SilentError
+					return cmdutil.ErrSilent
 				}
 			}
 		}

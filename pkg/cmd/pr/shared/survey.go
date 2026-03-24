@@ -154,7 +154,7 @@ func MetadataSurvey(p Prompt, io *iostreams.IOStreams, baseRepo ghrepo.Interface
 		for _, c := range state.Metadata {
 			if m == c {
 				return true
-			}
+			} //nolint:gocyclo
 		}
 		return false
 	}

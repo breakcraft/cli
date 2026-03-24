@@ -186,7 +186,7 @@ func TestNewCmdCreate(t *testing.T) {
 	}
 }
 
-func Test_createRun(t *testing.T) {
+func Test_createRun(t *testing.T) { //nolint:gocyclo
 	tests := []struct {
 		name        string
 		tty         bool
@@ -379,7 +379,7 @@ func Test_createRun(t *testing.T) {
 			},
 			wantStdout: "",
 			wantErr:    true,
-			errMsg:     "CancelError",
+			errMsg:     "ErrCancel",
 		},
 		{
 			name: "interactive with existing repository public",

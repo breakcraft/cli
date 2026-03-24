@@ -580,7 +580,7 @@ func (a *App) printOpenSSHConfig(ctx context.Context, opts sshOptions) (err erro
 	for _, cs := range csList {
 		if cs.State != "Available" && opts.selector.codespaceName == "" {
 			fmt.Fprintf(os.Stderr, "skipping unavailable codespace %s: %s\n", cs.Name, cs.State)
-			status = cmdutil.SilentError
+			status = cmdutil.ErrSilent
 			continue
 		}
 
@@ -654,7 +654,7 @@ func (a *App) printOpenSSHConfig(ctx context.Context, opts sshOptions) (err erro
 	for result := range sshUsers {
 		if result.err != nil {
 			fmt.Fprintf(os.Stderr, "%v\n", result.err)
-			status = cmdutil.SilentError
+			status = cmdutil.ErrSilent
 			continue
 		}
 

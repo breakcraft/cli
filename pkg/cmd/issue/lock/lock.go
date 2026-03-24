@@ -50,14 +50,13 @@ var reasonsApi = []githubv4.LockReason{
 // If no reason is given (an empty string), reasonsMap will return the nil
 // value, since it is not contained in the map.  This, in turn, sets lock_reason
 // to null in GraphQL.
-var reasonsMap map[string]*githubv4.LockReason
-
-func init() {
-	reasonsMap = make(map[string]*githubv4.LockReason)
+var reasonsMap = func() map[string]*githubv4.LockReason {
+	m := make(map[string]*githubv4.LockReason)
 	for i, reason := range reasons {
-		reasonsMap[reason] = &reasonsApi[i]
+		m[reason] = &reasonsApi[i]
 	}
-}
+	return m
+}()
 
 type command struct {
 	Name     string // actual command name

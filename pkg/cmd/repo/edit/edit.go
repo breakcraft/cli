@@ -387,7 +387,7 @@ func interactiveChoice(p iprompter, r *api.Repository) ([]string, error) {
 	return answers, err
 }
 
-func interactiveRepoEdit(opts *EditOptions, r *api.Repository) error {
+func interactiveRepoEdit(opts *EditOptions, r *api.Repository) error { //nolint:gocyclo
 	for _, v := range r.RepositoryTopics.Nodes {
 		opts.topicsCache = append(opts.topicsCache, v.Topic.Name)
 	}

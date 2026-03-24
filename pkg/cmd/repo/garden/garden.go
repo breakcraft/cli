@@ -122,7 +122,7 @@ func NewCmdGarden(f *cmdutil.Factory, runF func(*GardenOptions) error) *cobra.Co
 	return cmd
 }
 
-func gardenRun(opts *GardenOptions) error {
+func gardenRun(opts *GardenOptions) error { //nolint:gocyclo
 	cs := opts.IO.ColorScheme()
 	out := opts.IO.Out
 
@@ -435,7 +435,7 @@ func drawGarden(io *iostreams.IOStreams, garden [][]*Cell, player *Player) {
 		fmt.Fprintln(out)
 	}
 
-	fmt.Println()
+	fmt.Fprintln(out)
 	fmt.Fprintln(out, cs.Bold(sl))
 }
 

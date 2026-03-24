@@ -39,7 +39,7 @@ type EditOptions struct {
 	Interactive bool
 }
 
-func NewCmdEdit(f *cmdutil.Factory, runF func(*EditOptions) error) *cobra.Command {
+func NewCmdEdit(f *cmdutil.Factory, runF func(*EditOptions) error) *cobra.Command { //nolint:gocyclo
 	opts := &EditOptions{
 		IO:              f.IOStreams,
 		HttpClient:      f.HttpClient,

@@ -330,7 +330,7 @@ func TestNewCmdCreate(t *testing.T) {
 	}
 }
 
-func Test_createRun(t *testing.T) {
+func Test_createRun(t *testing.T) { //nolint:gocyclo
 	tests := []struct {
 		name               string
 		setup              func(*CreateOptions, *testing.T) func()
@@ -2330,7 +2330,7 @@ func TestNoRepoCanBeDetermined(t *testing.T) {
 	err := createRun(&opts)
 
 	// Then create fails
-	require.Equal(t, cmdutil.SilentError, err)
+	require.Equal(t, cmdutil.ErrSilent, err)
 	assert.Equal(t, "aborted: you must first push the current branch to a remote, or use the --head flag\n", stderr.String())
 }
 

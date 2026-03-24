@@ -10,6 +10,7 @@ var _ GitConfigClient = &CachedBranchConfigGitConfigClient{}
 
 type CachedBranchConfigGitConfigClient struct {
 	GitConfigClient
+
 	CachedBranchConfig git.BranchConfig
 }
 

@@ -3,6 +3,7 @@ package trustedroot
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -176,6 +177,7 @@ func TestGetTrustedRoot(t *testing.T) {
 	opts := &Options{
 		TufUrl:      mirror,
 		TufRootPath: root,
+		Out:         io.Discard,
 	}
 
 	reg := &httpmock.Registry{}
